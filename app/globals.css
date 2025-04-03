@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @plugin "tailwindcss-animate";
 
@@ -52,7 +52,8 @@
   --card-foreground: oklch(0.141 0.005 285.823);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.141 0.005 285.823);
-  --primary: oklch(0.21 0.006 285.885);
+  /* --primary: oklch(0.21 0.006 285.885); */
+  --primary: #2a2c32;
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.967 0.001 286.375);
   --secondary-foreground: oklch(0.21 0.006 285.885);
@@ -86,7 +87,8 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.21 0.006 285.885);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.92 0.004 286.32);
+  --primary: #2a2c32;
+  /* --primary: oklch(0.92 0.004 286.32); */
   --primary-foreground: oklch(0.21 0.006 285.885);
   --secondary: oklch(0.274 0.006 286.033);
   --secondary-foreground: oklch(0.985 0 0);
@@ -120,4 +122,28 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+/*
+business: {
+          primary: "#F14F38",
+          secondary: "#F9A23F",
+          dark: "#000000",
+          slate: "#263248",
+          gray: "#7E8AA2",
+        },*/
+@theme {
+  --color-custom-black-100: #d3d4d8; /* Very light gray */
+  --color-custom-black-200: #a6a8af; /* Light gray */
+  --color-custom-black-300: #7a7d84; /* Medium gray */
+  --color-custom-black-400: #4e5259; /* Darker gray */
+  --color-custom-black-500: #2a2c32; /* Base color */
+  --color-custom-black-600: #24262b; /* Darker variant */
+  --color-custom-black-700: #1e1f24; /* Even darker */
+  --color-custom-black-800: #17181d; /* Nearly black */
+  --color-custom-black-900: #0f1013; /* Almost pitch black */
+  --color-business-primary: #F14F38;
+  --color-business-secondary: #F9A23F;
+  --color-business-dark: #000000;
+  --color-business-slate: #263248;
+  --color-business-gray: #7E8AA2;
 }
