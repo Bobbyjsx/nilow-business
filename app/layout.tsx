@@ -53,7 +53,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://nillow.com',
+    url: 'https://nilow-business.vercel.app',
     title: 'Nillow | Book Your Services Online',
     description: 'Nillow is your all-in-one platform for booking beauty, wellness, and professional services.',
     siteName: 'Nillow',
@@ -105,6 +105,11 @@ export default function RootLayout({
           rel='preconnect'
           href='https://fonts.gstatic.com'
           crossOrigin='anonymous'
+        />
+        <link
+          rel='icon'
+          href='/favicon.png'
+          sizes='any'
         />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
