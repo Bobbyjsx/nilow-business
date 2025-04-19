@@ -1,8 +1,10 @@
-import { SessionProvider } from 'next-auth/react';
 import { Toaster } from '@/components/ui/toast';
 import { TanstackProvider } from '@/providers/tanstack-provider';
 import { ThemeProvider } from '@/providers/theme-provider';
+import { clientConfig } from '@/rollbar';
+import { Provider as RollbarProvider } from '@rollbar/react';
 import type { Metadata, Viewport } from 'next';
+import { SessionProvider } from 'next-auth/react';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 
@@ -96,38 +98,40 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang='en'>
-      <head>
-        <link
-          rel='preconnect'
-          href='https://fonts.googleapis.com'
-        />
-        <link
-          rel='preconnect'
-          href='https://fonts.gstatic.com'
-          crossOrigin='anonymous'
-        />
-        <link
-          rel='icon'
-          href='/favicon.png'
-          sizes='any'
-        />
-      </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <TanstackProvider>
-          <SessionProvider>
-            <Toaster />
-            <ThemeProvider
-              attribute='class'
-              defaultTheme='light'
-              enableSystem
-              disableTransitionOnChange
-            >
-              {children}
-            </ThemeProvider>
-          </SessionProvider>
-        </TanstackProvider>
-      </body>
-    </html>
+    <RollbarProvider config={clientConfig}>
+      <html lang='en'>
+        <head>
+          <link
+            rel='preconnect'
+            href='https://fonts.googleapis.com'
+          />
+          <link
+            rel='preconnect'
+            href='https://fonts.gstatic.com'
+            crossOrigin='anonymous'
+          />
+          <link
+            rel='icon'
+            href='/favicon.png'
+            sizes='any'
+          />
+        </head>
+        <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+          <TanstackProvider>
+            <SessionProvider>
+              <Toaster />
+              <ThemeProvider
+                attribute='class'
+                defaultTheme='light'
+                enableSystem
+                disableTransitionOnChange
+              >
+                {children}
+              </ThemeProvider>
+            </SessionProvider>
+          </TanstackProvider>
+        </body>
+      </html>
+    </RollbarProvider>
   );
 }
