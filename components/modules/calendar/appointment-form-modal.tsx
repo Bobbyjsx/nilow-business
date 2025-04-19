@@ -3,7 +3,7 @@
 import type { Appointment, AppointmentCreate } from '@/app/api/appointments';
 import { APPOINTMENT_STATUS_ENUM, useCreateAppointment, useUpdateAppointment } from '@/app/api/appointments';
 import { useActiveBusiness } from '@/app/api/me';
-import { fetchBusinessServicesInfiniteQuery } from '@/app/api/services';
+import { useFetchBusinessServicesInfiniteQuery } from '@/app/api/services';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -70,7 +70,7 @@ export function AppointmentFormModal({
   const { createAppointment, isPending } = useCreateAppointment();
   const { executeUpdateAppointment, isPending: isUpdating } = useUpdateAppointment();
   const [searchQuery, setSearchQuery] = useState('');
-  const { fetchNextPage, services, hasNextPage, isLoading, refetch } = fetchBusinessServicesInfiniteQuery(1, 10, searchQuery);
+  const { fetchNextPage, services, hasNextPage, isLoading, refetch } = useFetchBusinessServicesInfiniteQuery(1, 10, searchQuery);
   const { activeBusiness } = useActiveBusiness();
 
   const loadOptions = useCallback(async (inputValue?: string) => setSearchQuery(inputValue || ''), [refetch]);

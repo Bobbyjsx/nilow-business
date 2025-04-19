@@ -1,6 +1,6 @@
 'use client';
 
-import { fetchBusinessServicesInfiniteQuery } from '@/app/api/services';
+import { useFetchBusinessServicesInfiniteQuery } from '@/app/api/services';
 import { FadeIn } from '@/components/common/fade-in';
 import InfiniteScrollList from '@/components/common/InfiniteScroll';
 import { Badge } from '@/components/ui/badge';
@@ -17,7 +17,7 @@ import { useMemo, useState } from 'react';
 export const DashboardServicesPage = () => {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
-  const { fetchNextPage, services, isLoading: isServicesLoading, isFetchingNextPage } = fetchBusinessServicesInfiniteQuery(1, 10, searchQuery);
+  const { fetchNextPage, services, isLoading: isServicesLoading, isFetchingNextPage } = useFetchBusinessServicesInfiniteQuery(1, 10, searchQuery);
 
   // Extract unique categories from services
   const serviceCategories = useMemo(() => {

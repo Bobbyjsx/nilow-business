@@ -155,7 +155,7 @@ export const useUpdateBusinessService = () => {
   return { updateBusinessService: mutateAsync, isPending, error };
 };
 
-export const fetchBusinessServicesInfiniteQuery = (page = 1, limit = 10, search = '') => {
+export const useFetchBusinessServicesInfiniteQuery = (page = 1, limit = 10, search = '') => {
   const { data, isLoading, error, hasNextPage, fetchNextPage, isFetchingNextPage, refetch } = useInfiniteQuery({
     queryKey: ['business-services-infinite', page, limit, search],
     queryFn: ({ pageParam = 1 }) => getBusinessServices({ page: pageParam, limit, search }),

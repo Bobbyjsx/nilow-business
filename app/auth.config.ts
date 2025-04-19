@@ -50,7 +50,7 @@ export const authConfig = {
         return {
           ...token,
           user: {
-            ...(token.user as {}),
+            ...(token.user as Record<string, any>),
             ...(session.user.isCompleted !== undefined && { isCompleted: session.user.isCompleted }),
             ...(session.user.status !== undefined && { status: session.user.status }),
             ...(session.user.businessId !== undefined && { businessId: session.user.businessId }),
