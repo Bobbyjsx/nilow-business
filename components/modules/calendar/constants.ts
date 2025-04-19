@@ -86,3 +86,9 @@ export const ANIMATION_VARIANTS = {
     animate: { opacity: 1 },
   },
 };
+
+// convert HH;MM to Date
+export const convertHHMMToDate = (hhmm: string): Date => {
+  const [hours, minutes] = hhmm.split(':').map(Number);
+  return new Date(0, 0, 0, hours, minutes);
+};

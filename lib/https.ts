@@ -1,15 +1,21 @@
 import axios from 'axios';
+import { BASE_API_URL, TOKEN_KEY } from './constants';
+import { auth } from '@/app/auth';
+import { getSession } from 'next-auth/react';
 
-const axiosInstance = axios.create({
-  baseURL: 'https://api.example.com',
+const http = axios.create({
+  baseURL: BASE_API_URL,
   headers: {
     'Content-Type': 'application/json',
+    'x-client-role': 'Business',
   },
 });
 
-axiosInstance.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
+http.interceptors.request.use(
+  async (config) => {
+    const session = await getSession();
+    const token = session?.user?.accessToken;
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -18,9 +24,15 @@ axiosInstance.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
-axiosInstance.interceptors.response.use(
+http.interceptors.response.use(
   (response) => response,
   (error) => Promise.reject(error),
 );
 
-export default axiosInstance;
+export default http;
+
+export const getServerError = (error: any) => {
+  const errorMessage = error?.response?.data?.response?.message || error?.response?.data?.message[0] || error?.message || 'An error occurred';
+
+  return errorMessage;
+};

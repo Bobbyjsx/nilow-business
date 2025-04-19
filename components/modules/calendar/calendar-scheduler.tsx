@@ -1,5 +1,6 @@
 'use client';
 
+import { Appointment } from '@/app/api/appointments';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -8,51 +9,27 @@ import { addDays, subDays } from 'date-fns';
 import { Settings } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { useAppointments } from './appointment-context';
 import { CalendarDayView } from './calendar-day-view';
 import { CalendarHeader } from './calendar-header';
 import { isTimeSlotDisabled } from './calendar-utils';
 import { CalendarWeekView } from './calendar-week-view';
 import { SettingsDialog } from './settings-dialog';
 import { TimeZoneSelector } from './time-zone-selector';
-import { CalendarSettings, Event, ViewType } from './types';
+import { CalendarSettings, ViewType } from './types';
 
 export function CalendarScheduler({
   onEventSelect,
   onTimeSlotSelect,
   events: externalEvents,
 }: {
-  onEventSelect?: (event: Event) => void;
+  onEventSelect?: (event: Appointment) => void;
   onTimeSlotSelect?: (start: Date, end: Date) => void;
-  events?: Event[];
+  events?: Appointment[];
 }) {
-  const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const { selectedDate: currentDate, setSelectedDate: setCurrentDate } = useAppointments();
   const [view, setView] = useState<ViewType>('day');
-  const [events, setEvents] = useState<Event[]>([
-    {
-      id: '1',
-      title: 'Daily Standup Meeting',
-      start: new Date(currentDate.setHours(12, 15)),
-      end: new Date(currentDate.setHours(13, 0)),
-      color: '#d1d5f0',
-      textColor: '#000000',
-      allDay: false,
-      location: 'Conference Room A',
-      description: 'Daily team sync-up meeting',
-      recurrence: null,
-    },
-    {
-      id: '2',
-      title: 'Counselor Meetup',
-      start: new Date(currentDate.setHours(18, 0)),
-      end: new Date(currentDate.setHours(18, 45)),
-      color: '#d1f0d5',
-      textColor: '#000000',
-      allDay: false,
-      location: 'Office 302',
-      description: 'Weekly counseling session',
-      recurrence: null,
-    },
-  ]);
+  const [events, setEvents] = useState<Appointment[]>([]);
   const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
   const [settings, setSettings] = useState<CalendarSettings>({
     startHour: 9,
@@ -115,7 +92,7 @@ export function CalendarScheduler({
     }
   };
 
-  const handleEventSelect = (event: Event) => {
+  const handleEventSelect = (event: Appointment) => {
     if (onEventSelect) {
       onEventSelect(event);
     }
@@ -196,16 +173,6 @@ export function CalendarScheduler({
           )}
         </div>
       </div>
-
-      {/* <EventDialog
-        open={isEventDialogOpen}
-        onOpenChange={setIsEventDialogOpen}
-        event={selectedEvent}
-        timeSlot={selectedTimeSlot}
-        onSave={handleEventSave}
-        onDelete={handleEventDelete}
-        settings={settings}
-      /> */}
 
       <SettingsDialog
         open={isSettingsDialogOpen}

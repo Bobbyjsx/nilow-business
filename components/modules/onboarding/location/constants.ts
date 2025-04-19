@@ -9,8 +9,11 @@ const StoreLocationSchema = z
   .object({
     city: z.string().min(1).max(100),
     street: z.string().min(1).max(100),
-    street1: z.string().optional(),
     zipCode: z.string().min(1).max(100),
+    state: z.string().min(1).max(100),
+    country: z.string().min(1).max(100),
+    latitude: z.string(),
+    longitude: z.string(),
     isSharedLocation: z.boolean().default(false),
     sharedLocationName: z.string().optional(),
     sharedLocationSuiteNumber: z.string().optional(),

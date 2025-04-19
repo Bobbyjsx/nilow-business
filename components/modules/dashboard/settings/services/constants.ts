@@ -94,3 +94,11 @@ export const serviceCategories = [
   { value: 'grooming', label: 'Grooming' },
   { value: 'other', label: 'Other' },
 ];
+
+type ServiceTarget = 'everyone' | 'male' | 'female';
+
+export const serviceTargets = [
+  { value: 'everyone', label: 'Everyone' },
+  { value: 'male', label: 'Male' },
+  { value: 'female', label: 'Female' },
+];

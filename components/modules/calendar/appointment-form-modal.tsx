@@ -1,63 +1,58 @@
 'use client';
 
+import type { Appointment, AppointmentCreate } from '@/app/api/appointments';
+import { APPOINTMENT_STATUS_ENUM, useCreateAppointment, useUpdateAppointment } from '@/app/api/appointments';
+import { useActiveBusiness } from '@/app/api/me';
+import { fetchBusinessServicesInfiniteQuery } from '@/app/api/services';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { FloatingLabelInput } from '@/components/ui/floating-label-input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select } from '@/components/ui/select';
-import { SearchableSelect } from '@/components/ui/select/searchable-select';
+import { Switch } from '@/components/ui/switch';
 import { TextArea } from '@/components/ui/textarea';
+import { toast } from '@/components/ui/toast';
+import { formatPrice } from '@/lib/constants';
+import { getServerError } from '@/lib/https';
 import { cn } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Label } from '@radix-ui/react-label';
-import { addMinutes, format, setHours, setMinutes } from 'date-fns';
+import { format } from 'date-fns';
 import { CalendarIcon, Pencil, Plus } from 'lucide-react';
-import { useEffect, useMemo } from 'react';
-import { Controller, useForm, useWatch } from 'react-hook-form';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { dummyServices } from '../dashboard/settings/services/constants';
-import { formatTo12Hour } from '../onboarding/business-hours/constant';
-import { formatDuration, formatPrice } from '../onboarding/services/constants';
-import { AppointmentEvent } from './appointment-drawer';
+import { convertHHMMToDate } from './constants';
 import { Customer, MOCK_CUSTOMERS } from './customer-data';
 import type { Service } from './types';
 
 // Appointment form schema definition
 const appointmentFormSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
-  start: z.date(),
-  end: z.date(),
-  color: z.string().default('#d1d5f0'),
-  textColor: z.string().default('#000000'),
-  location: z.string().optional(),
+  startDate: z.date(),
+  startTime: z.string(),
   description: z.string().optional(),
   customerId: z.string().min(1, 'Customer is required'),
-  services: z.array(z.string()).min(1, 'At least one service is required'),
+  services: z.array(z.any()).min(1, 'At least one service is required'),
+  isHomeService: z.boolean().default(false),
+  paymentMethod: z.string().min(1, 'Payment method is required'),
 });
 
 type AppointmentFormData = z.infer<typeof appointmentFormSchema>;
 
 // Default appointment values
 const DEFAULT_APPOINTMENT_VALUES: AppointmentFormData = {
-  title: '',
-  start: new Date(),
-  end: new Date(),
-  color: '#d1d5f0',
-  textColor: '#000000',
-  location: '',
-  description: '',
+  startDate: new Date(),
+  startTime: format(new Date(), 'HH:mm'),
   customerId: '',
   services: [],
+  isHomeService: false,
+  paymentMethod: 'checkout',
 };
 
 interface AppointmentFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  appointment: AppointmentEvent | null;
+  appointment: Appointment | null;
   timeSlot?: { start: Date; end: Date } | null;
-  onSave: (appointment: AppointmentEvent) => void;
-  onDelete?: (appointmentId: string) => void;
   services?: Service[]; // Optional prop to pass services
   customers?: Customer[]; // Optional prop to pass customers
   mode: 'create' | 'edit';
@@ -68,20 +63,24 @@ export function AppointmentFormModal({
   onOpenChange,
   appointment,
   timeSlot,
-  onSave,
-  onDelete,
-  services = dummyServices, // Default to mock services if not provided
   customers = MOCK_CUSTOMERS, // Default to mock customers if not provided
   mode,
 }: AppointmentFormModalProps) {
   const isEditing = mode === 'edit';
+  const { createAppointment, isPending } = useCreateAppointment();
+  const { executeUpdateAppointment, isPending: isUpdating } = useUpdateAppointment();
+  const [searchQuery, setSearchQuery] = useState('');
+  const { fetchNextPage, services, hasNextPage, isLoading, refetch } = fetchBusinessServicesInfiniteQuery(1, 10, searchQuery);
+  const { activeBusiness } = useActiveBusiness();
+
+  const loadOptions = useCallback(async (inputValue?: string) => setSearchQuery(inputValue || ''), [refetch]);
 
   // Convert services to options for the multi-select
   const serviceOptions = useMemo(() => {
     return services.map((service) => ({
-      value: service.id,
+      value: service._id || '',
       label: service.name,
-      description: `${formatDuration(service.hours, service.minutes)} - ${formatPrice(service.price)}`,
+      description: `${service.duration} - ${formatPrice(service.cost)}`,
     }));
   }, [services]);
 
@@ -100,19 +99,6 @@ export function AppointmentFormModal({
     defaultValues: getInitialFormValues(appointment, timeSlot),
   });
 
-  // Watch for changes to key fields
-  const selectedServices = useWatch({
-    control: form.control,
-    name: 'services',
-    defaultValue: [],
-  });
-
-  // const selectedCustomerId = useWatch({
-  //   control: form.control,
-  //   name: 'customerId',
-  //   defaultValue: '',
-  // });
-
   // Reset form values when dialog opens or appointment/timeSlot changes
   useEffect(() => {
     if (open) {
@@ -120,38 +106,14 @@ export function AppointmentFormModal({
     }
   }, [form, appointment, timeSlot, open]);
 
-  useEffect(() => {
-    if (!selectedServices || selectedServices.length === 0) return;
-
-    // Calculate total duration
-    let totalDuration = 0;
-
-    selectedServices.forEach((serviceId) => {
-      const service = services.find((s) => s.id === serviceId);
-      if (service) {
-        // Add duration
-        const hours = parseInt(service.hours) || 0;
-        const minutes = parseInt(service.minutes) || 0;
-        totalDuration += hours * 60 + minutes;
-      }
-    });
-
-    // Update end time based on start time + total duration
-    if (totalDuration > 0) {
-      const startTime = form.getValues('start');
-      const newEndTime = addMinutes(new Date(startTime), totalDuration);
-      form.setValue('end', newEndTime);
-    }
-  }, [selectedServices, services, form]);
-
-  // Generate time options (memoized to prevent recalculation)
+  // Generate time options (memoized)
   const timeOptions = useMemo(() => {
     const options = [];
     for (let hour = 0; hour < 24; hour++) {
       for (let minute = 0; minute < 60; minute += 15) {
         const timeValue = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
         options.push({
-          label: formatTo12Hour(timeValue),
+          label: timeValue,
           value: timeValue,
         });
       }
@@ -159,73 +121,68 @@ export function AppointmentFormModal({
     return options;
   }, []);
 
-  // Handle form submission
-  const handleSubmit = (data: AppointmentFormData) => {
-    // Find the customer
-    const customer = customers.find((c) => c.id === data.customerId);
-    if (!customer) return;
+  const handleSubmit = async (data: AppointmentFormData) => {
+    try {
+      // Parse time from HH:mm string
+      const [hours, minutes] = data.startTime.split(':').map(Number);
 
-    // Find the full service objects for the selected service IDs
-    const selectedServiceObjects = services.filter((service) => data.services?.includes(service.id));
+      // Merge startDate and startTime
+      const mergedDate = new Date(data.startDate);
+      mergedDate.setHours(hours);
+      mergedDate.setMinutes(minutes);
 
-    // Calculate total price
-    const totalPrice = selectedServiceObjects.reduce((sum, service) => sum + parseFloat(service.price), 0);
+      const payload: AppointmentCreate = {
+        customerId: data.customerId,
+        isHomeService: data.isHomeService,
+        additionalNotes: data.description || '',
+        startTime: data.startTime,
+        appointmentDate: mergedDate,
+        payment_method: data.paymentMethod,
+        servicesIds: data.services,
+        businessId: activeBusiness?.business?._id || '',
+      };
 
-    // Create updated or new appointment
-    const updatedAppointment: AppointmentEvent = {
-      id: appointment?.id || crypto.randomUUID(),
-      ...data,
-      customerName: customer.name,
-      customerPhone: customer.phone,
-      services: selectedServiceObjects,
-      totalPrice,
-      status: appointment?.status || 'scheduled',
-      beforeImage: appointment?.beforeImage,
-      afterImage: appointment?.afterImage,
-    };
-
-    onSave(updatedAppointment);
-    onOpenChange(false);
-  };
-
-  // Handle event deletion with confirmation
-  const handleDelete = () => {
-    if (appointment?.id && onDelete) {
-      onDelete(appointment.id);
-      onOpenChange(false);
+      if (isEditing && appointment) {
+        await executeUpdateAppointment(
+          { id: appointment._id, appointment: payload },
+          {
+            onSuccess: () => {
+              toast.success({ message: 'Appointment updated successfully' });
+              onOpenChange(false);
+            },
+            onError: (error) => {
+              const errMsg = getServerError(error);
+              toast.error({ message: errMsg });
+            },
+          },
+        );
+      } else {
+        await createAppointment(payload, {
+          onSuccess: () => {
+            toast.success({ message: 'Appointment created successfully' });
+            onOpenChange(false);
+          },
+          onError: (error) => {
+            const errMsg = getServerError(error);
+            toast.error({ message: errMsg });
+          },
+        });
+      }
+    } catch (error) {
+      console.error('Error handling appointment submission:', error);
+      toast.error({ message: 'Something went wrong. Please try again.' });
     }
   };
 
-  // Helper function to update time for a date field
-  const updateTimeForDate = (field: any, timeValue: string) => {
-    const [hourStr, minuteStr] = timeValue.split(':');
-    const hour = parseInt(hourStr, 10);
-    const minute = parseInt(minuteStr, 10);
-
-    const newDate = new Date(field.value);
-    const updatedDate = setMinutes(setHours(newDate, hour), minute);
-    field.onChange(updatedDate);
-  };
-
-  // Helper function to update dates while preserving time
   const updateDatesWithSameTime = (selectedDate: Date) => {
-    // For start date: preserve time but update date
-    const startDate = form.getValues('start');
-    const newStartDate = new Date(selectedDate);
-    newStartDate.setHours(startDate.getHours(), startDate.getMinutes(), 0, 0);
-    form.setValue('start', newStartDate);
-
-    // For end date: keep same time but use the new selected date
-    const endDate = form.getValues('end');
-    const newEndDate = new Date(selectedDate);
-    newEndDate.setHours(endDate.getHours(), endDate.getMinutes(), 0, 0);
-    form.setValue('end', newEndDate);
+    const time = form.getValues('startTime');
+    form.setValue('startDate', selectedDate);
   };
 
-  // Check if appointment can be edited (not completed or cancelled)
+  // Check if appointment can be edited (based on status)
   const canEditAppointment = () => {
     if (!isEditing) return true;
-    return appointment?.status !== 'completed' && appointment?.status !== 'cancelled';
+    return appointment?.status !== APPOINTMENT_STATUS_ENUM.COMPLETED && appointment?.status !== APPOINTMENT_STATUS_ENUM.CANCELED;
   };
 
   return (
@@ -271,24 +228,10 @@ export function AppointmentFormModal({
             <div className='space-y-1'>
               <Controller
                 control={form.control}
-                name='title'
-                render={({ field }) => (
-                  <FloatingLabelInput
-                    label='Appointment title'
-                    className='!h-10'
-                    error={form.formState.errors.title?.message}
-                    {...field}
-                  />
-                )}
-              />
-            </div>
-
-            <div className='space-y-1'>
-              <Controller
-                control={form.control}
                 name='customerId'
                 render={({ field }) => (
-                  <SearchableSelect
+                  <Select
+                    variant='searchable'
                     label='Customer'
                     options={customerOptions}
                     value={field.value}
@@ -317,6 +260,13 @@ export function AppointmentFormModal({
                     placeholder='Select services'
                     triggerClassName='!min-h-11'
                     error={form.formState.errors.services?.message}
+                    loadOptions={(input) => loadOptions(input)}
+                    onMenuScrollToBottom={() => {
+                      if (!isLoading && hasNextPage) {
+                        fetchNextPage();
+                      }
+                    }}
+                    isLoading={isLoading}
                   />
                 )}
               />
@@ -325,28 +275,59 @@ export function AppointmentFormModal({
             <div className='space-y-1'>
               <Controller
                 control={form.control}
-                name='location'
+                name='paymentMethod'
                 render={({ field }) => (
-                  <FloatingLabelInput
-                    label='Location'
-                    placeholder='Enter location'
-                    className='!h-10'
-                    {...field}
+                  <Select
+                    label='Payment Method'
+                    options={[
+                      { value: 'card', label: 'Card' },
+                      { value: 'checkout', label: 'Checkout' },
+                    ]}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder='Select payment method'
+                    triggerClassName='!h-11'
+                    error={form.formState.errors.paymentMethod?.message}
                   />
                 )}
               />
             </div>
 
+            <div className='space-y-1'>
+              <Controller
+                control={form.control}
+                name='isHomeService'
+                render={({ field }) => (
+                  <div className='flex flex-row items-center justify-between rounded-lg border py-1 pb-2 px-3 shadow-sm'>
+                    <div className='space-y-0.5'>
+                      <label
+                        htmlFor='homeService'
+                        className='text-gray-500 text-sm font-medium'
+                      >
+                        Home service
+                      </label>
+                      <div className='text-xs text-gray-500'>If checked, the appointment will be scheduled for the customer's location.</div>
+                    </div>
+                    <Switch
+                      id='homeService'
+                      checked={field.value || false}
+                      onCheckedChange={field.onChange}
+                    />
+                  </div>
+                )}
+              />
+            </div>
+
             <div className='space-y-1 w-full'>
-              <Label
+              <label
                 htmlFor='startDate'
                 className='text-sm'
               >
                 Date
-              </Label>
+              </label>
               <Controller
                 control={form.control}
-                name='start'
+                name='startDate'
                 render={({ field }) => (
                   <div className='flex flex-col'>
                     <Popover>
@@ -378,50 +359,25 @@ export function AppointmentFormModal({
                         />
                       </PopoverContent>
                     </Popover>
-                    {form.formState.errors.start && <p className='text-sm font-medium text-red-500'>{form.formState.errors.start.message}</p>}
+                    {form.formState.errors.startDate && <p className='text-sm font-medium text-red-500'>{form.formState.errors.startDate.message}</p>}
                   </div>
                 )}
               />
             </div>
-            <div className='grid sm:grid-cols-2 gap-4'>
-              {/* Start Time */}
+
+            <div className='space-y-1'>
               <Controller
                 control={form.control}
-                name='start'
+                name='startTime'
                 render={({ field }) => (
                   <div>
                     <Select
                       label='Start Time'
                       options={timeOptions}
-                      value={`${field.value.getHours().toString().padStart(2, '0')}:${field.value.getMinutes().toString().padStart(2, '0')}`}
+                      value={field.value}
                       className='!h-11'
-                      onChange={(value) => {
-                        if (value) {
-                          updateTimeForDate(field, value);
-                        }
-                      }}
-                      error={form.formState.errors.start?.message}
-                    />
-                  </div>
-                )}
-              />
-
-              <Controller
-                control={form.control}
-                name='end'
-                render={({ field }) => (
-                  <div>
-                    <Select
-                      label='End Time'
-                      options={timeOptions}
-                      value={`${field.value.getHours().toString().padStart(2, '0')}:${field.value.getMinutes().toString().padStart(2, '0')}`}
-                      className='!h-11'
-                      onChange={(value) => {
-                        if (value) {
-                          updateTimeForDate(field, value);
-                        }
-                      }}
-                      error={form.formState.errors.end?.message}
+                      onChange={field.onChange}
+                      error={form.formState.errors.startTime?.message}
                     />
                   </div>
                 )}
@@ -442,31 +398,20 @@ export function AppointmentFormModal({
               />
             </div>
 
-            {selectedServices.length > 0 && (
-              <div className='mt-4 p-3 bg-gray-50 rounded-md border border-gray-200'>
-                <div className='flex justify-between items-center'>
-                  <span className='font-medium text-gray-700'>Total Price:</span>
-                  <span className='font-bold text-lg'>
-                    $
-                    {selectedServices
-                      .reduce((sum, serviceId) => {
-                        const service = services.find((s) => s.id === serviceId);
-                        return sum + (service ? parseFloat(service.price) : 0);
-                      }, 0)
-                      .toFixed(2)}
-                  </span>
-                </div>
+            <div className='mt-4 p-3 bg-gray-50 rounded-md border border-gray-200'>
+              <div className='flex justify-between items-center'>
+                <span className='font-medium text-gray-700'>Total Price:</span>
+                <span className='font-bold text-lg'>${appointment?.appointment_fee.toFixed(2)}</span>
               </div>
-            )}
+            </div>
 
-            {/* Footer Buttons */}
             <DialogFooter className='gap-2 sm:gap-0 flex flex-col'>
               <div className='flex gap-x-3 w-full'>
-                {isEditing && onDelete ? (
+                {isEditing ? (
                   <Button
                     type='button'
                     variant='destructive'
-                    onClick={handleDelete}
+                    onClick={() => onOpenChange(false)}
                     className='w-1/2'
                   >
                     Delete
@@ -484,6 +429,8 @@ export function AppointmentFormModal({
                 <Button
                   type='submit'
                   className='w-1/2'
+                  disabled={isPending || isUpdating}
+                  isLoading={isPending || isUpdating}
                 >
                   {isEditing ? 'Update' : 'Create'}
                 </Button>
@@ -493,7 +440,7 @@ export function AppointmentFormModal({
         ) : (
           <div className='p-4 bg-muted/50 rounded-lg text-center'>
             <p className='text-muted-foreground'>
-              {appointment?.status === 'completed'
+              {appointment?.status === APPOINTMENT_STATUS_ENUM.COMPLETED
                 ? 'This appointment has been completed and cannot be modified.'
                 : 'This appointment has been cancelled and cannot be modified.'}
             </p>
@@ -504,30 +451,45 @@ export function AppointmentFormModal({
   );
 }
 
-// Helper function to get initial form values
-function getInitialFormValues(appointment: AppointmentEvent | null, timeSlot?: { start: Date; end: Date } | null): AppointmentFormData {
+// Helper function to get initial form values (appointment object is used only for defaults)
+function getInitialFormValues(appointment: Appointment | null, timeSlot?: { start: Date; end: Date } | null): AppointmentFormData {
+  const parseDate = (value: unknown): Date => {
+    if (value instanceof Date) return value;
+    return new Date(value as string);
+  };
+
   if (appointment) {
-    // Editing existing appointment
+    const startTime = convertHHMMToDate(appointment.start_time);
     return {
-      title: appointment.title,
-      start: appointment.start,
-      end: appointment.end,
-      color: appointment.color || '#d1d5f0',
-      textColor: appointment.textColor || '#000000',
-      location: appointment.location || '',
-      description: appointment.description || '',
-      customerId: MOCK_CUSTOMERS.find((c) => c.name === appointment.customerName)?.id || '',
-      services: appointment.services?.map((service) => service.id) || [],
+      startDate: startTime,
+      startTime: format(startTime, 'HH:mm'),
+      isHomeService: appointment.isHomeService || false,
+      description: appointment.additional_notes || '',
+      customerId: appointment.customer,
+      services: [],
+      paymentMethod: appointment.payment_method || 'checkout',
     };
   } else if (timeSlot) {
-    // Creating appointment with pre-selected time slot
+    const startTime = parseDate(timeSlot.start);
     return {
-      ...DEFAULT_APPOINTMENT_VALUES,
-      start: timeSlot.start,
-      end: timeSlot.end,
+      startDate: startTime,
+      startTime: format(startTime, 'HH:mm'),
+      isHomeService: false,
+      description: '',
+      customerId: '',
+      services: [],
+      paymentMethod: 'checkout',
     };
   }
 
-  // Default values for new appointment
-  return DEFAULT_APPOINTMENT_VALUES;
+  const now = new Date();
+  return {
+    startDate: now,
+    startTime: format(now, 'HH:mm'),
+    isHomeService: false,
+    description: '',
+    customerId: '',
+    services: [],
+    paymentMethod: 'checkout',
+  };
 }

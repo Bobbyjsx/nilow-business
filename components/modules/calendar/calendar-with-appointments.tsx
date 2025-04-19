@@ -1,12 +1,12 @@
 'use client';
 
+import { Appointment } from '@/app/api/appointments';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { AppointmentProvider, useAppointments } from './appointment-context';
 import { AppointmentDrawer } from './appointment-drawer';
 import { AppointmentFormModal } from './appointment-form-modal';
 import { CalendarScheduler } from './calendar-scheduler';
-import { Event } from './types';
 
 // Wrapper component that connects the calendar with the appointment drawer
 function CalendarWithAppointmentsInner() {
@@ -20,20 +20,12 @@ function CalendarWithAppointmentsInner() {
     openAppointmentDrawer,
     closeAppointmentDrawer,
     openCreateModal,
-    openEditModal,
     closeFormModal,
-    createAppointment,
-    updateAppointment,
-    deleteAppointment,
-    updateAppointmentStatus,
-    cancelAppointment,
-    uploadBeforeImage,
-    uploadAfterImage,
   } = useAppointments();
-
-  // Handle event selection from the calendar
-  const handleEventSelect = (event: Event) => {
-    openAppointmentDrawer(event.id);
+  console.log('appointments', selectedAppointment);
+  
+  const handleEventSelect = (event: Appointment) => {
+    openAppointmentDrawer(event._id);
   };
 
   // Handle time slot selection from the calendar
@@ -43,7 +35,7 @@ function CalendarWithAppointmentsInner() {
 
   return (
     <div className='space-y-4'>
-      <div className='flex justify-end mr-1 sm:mr-0'>
+      <div className='flex justify-end mr-3'>
         <Button
           onClick={() => openCreateModal()}
           className='flex items-center gap-2'
@@ -65,10 +57,6 @@ function CalendarWithAppointmentsInner() {
         open={isDrawerOpen}
         onOpenChange={closeAppointmentDrawer}
         appointment={selectedAppointment}
-        onStatusChange={updateAppointmentStatus}
-        onCancel={cancelAppointment}
-        onUploadBeforeImage={uploadBeforeImage}
-        onUploadAfterImage={uploadAfterImage}
       />
 
       {/* Appointment Form Modal (for both create and edit) */}
@@ -77,8 +65,6 @@ function CalendarWithAppointmentsInner() {
         onOpenChange={closeFormModal}
         appointment={selectedAppointment}
         timeSlot={selectedTimeSlot}
-        onSave={formModalMode === 'create' ? createAppointment : updateAppointment}
-        onDelete={formModalMode === 'edit' ? deleteAppointment : undefined}
         mode={formModalMode}
       />
     </div>

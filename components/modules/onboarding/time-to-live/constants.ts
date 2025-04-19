@@ -5,17 +5,19 @@ enum TimeToLiveKeys {
 }
 
 enum TimeToLive {
-  NOW = 'now',
-  TOMORROW = 'tomorrow',
-  THREE_DAYS = 'in 3 days',
-  FIVE_DAYS = 'in 5 days',
-  SEVEN_DAYS = 'in 7 days',
+  NOW = '0',
+  TOMORROW = '24',
+  THREE_DAYS = '72',
+  FIVE_DAYS = '120',
+  SEVEN_DAYS = '168',
 }
 
-const timeToLiveOptions = Object.entries(TimeToLive).map((time) => ({
-  value: time[0],
-  label: capitalizeFirstLetter(time[1]),
-}));
+const timeToLiveOptions = Object.entries(TimeToLive)
+  .filter(([key]) => isNaN(Number(key))) // Filter out reverse mappings
+  .map(([key, value]) => ({
+    value: value, // Use the enum value as the option value
+    label: capitalizeFirstLetter(key.split('_').join(' ').toLowerCase()), // Format the key as readable text
+  }));
 
 type TimeToLiveType = keyof typeof TimeToLive;
 

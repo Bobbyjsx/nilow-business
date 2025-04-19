@@ -147,3 +147,7 @@ business: {
   --color-business-slate: #263248;
   --color-business-gray: #7E8AA2;
 }
+
+*{
+    /* outline: 2px solid red; */
+}

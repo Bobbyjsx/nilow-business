@@ -1,23 +1,24 @@
+import { ServiceType } from '@/app/api/services';
 import { PriceType } from '../onboarding/travel-fee/constants';
 
 export type ViewType = 'day' | 'week' | 'month' | 'agenda';
 
 export interface Service {
-  id: string;
+  id?: string;
   name: string;
-  serviceType: string;
-  serviceCategory?: string;
+  serviceType?: string | ServiceType;
+  serviceCategory?: string | ServiceType;
   hours: string;
   minutes: string;
-  price: string;
+  price: number;
   startsAt: boolean;
   priceType: PriceType;
   duration?: number; // Duration in minutes
   description?: string;
   color?: string;
   photos?: string[];
+  target: string;
 }
-
 export interface Event {
   id: string;
   title: string;

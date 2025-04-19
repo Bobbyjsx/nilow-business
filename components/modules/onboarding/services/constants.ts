@@ -36,13 +36,6 @@ const servicesFormSchema = z.object({
 export type Service = z.infer<typeof serviceSchema>;
 export type ServicesFormValues = z.infer<typeof servicesFormSchema>;
 
-// Helper functions
-export const formatPrice = (price: string): string => {
-  if (!price) return '$0.00';
-  const formattedPrice = `$${parseFloat(price).toFixed(2)}`;
-  return `${formattedPrice}+`;
-};
-
 // Format duration from hours and minutes
 export const formatDuration = (hours: string, minutes: string): string => {
   const hoursNum = parseInt(hours, 10);
@@ -60,7 +53,11 @@ export const formatDuration = (hours: string, minutes: string): string => {
 };
 
 // Parse duration string into hours and minutes
-export const parseDuration = (duration: string): { hours: string; minutes: string } => {
+export const parseDuration = (duration?: string): { hours: string; minutes: string } => {
+  if (!duration) {
+    return { hours: '0', minutes: '00' };
+  }
+
   const hoursMatch = duration.match(/(\d+)h/);
   const minutesMatch = duration.match(/(\d+)m/);
 
@@ -70,9 +67,8 @@ export const parseDuration = (duration: string): { hours: string; minutes: strin
   };
 };
 
-// Hours options (1-12)
-export const hoursOptions = Array.from({ length: 12 }, (_, i) => {
-  const value = (i + 1).toString();
+export const hoursOptions = Array.from({ length: 24 }, (_, i) => {
+  const value = i.toString().padStart(2, '0');
   return {
     value,
     label: value,

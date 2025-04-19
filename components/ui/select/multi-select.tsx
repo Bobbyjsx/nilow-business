@@ -1,9 +1,9 @@
-'use client';
-
+import { cn } from '@/lib/utils';
 import { ChevronsUpDown, X } from 'lucide-react';
 import * as React from 'react';
-
-import { cn } from '@/lib/utils';
+import { useEffect } from 'react';
+import { useInView } from 'react-intersection-observer';
+import { useDebounce } from 'use-debounce';
 import { Badge } from '../badge';
 import { Button } from '../button';
 import { Checkbox } from '../checkbox';
@@ -28,6 +28,10 @@ export interface MultiSelectProps {
   maxItems?: number;
   maxDisplayItems?: number;
   description?: string;
+  loadOptions?: (search?: string) => void;
+  onMenuScrollToBottom?: () => void;
+  hasMore?: boolean;
+  isLoading?: boolean;
 }
 
 export function MultiSelect({
@@ -47,14 +51,28 @@ export function MultiSelect({
   maxItems,
   maxDisplayItems = 3,
   description,
+  isLoading,
+  onMenuScrollToBottom,
+  loadOptions,
 }: MultiSelectProps) {
   const [open, setOpen] = React.useState(defaultOpen);
   const [searchQuery, setSearchQuery] = React.useState('');
+  const { ref, inView } = useInView();
+  const [debouncedSearch] = useDebounce(searchQuery, 200);
 
-  // Find the selected options
+  useEffect(() => {
+    if (debouncedSearch && loadOptions && !options.some((option) => option.label.toLowerCase().includes(debouncedSearch.toLowerCase()))) {
+      loadOptions(debouncedSearch);
+    }
+  }, [debouncedSearch, loadOptions, options]);
+
+  useEffect(() => {
+    if (inView && onMenuScrollToBottom) {
+      onMenuScrollToBottom();
+    }
+  }, [inView, onMenuScrollToBottom]);
+
   const selectedOptions = React.useMemo(() => options.filter((option) => value.includes(option.value)), [options, value]);
-
-  // Filter options based on search query
   const filteredOptions = React.useMemo(
     () =>
       options.filter(
@@ -64,38 +82,17 @@ export function MultiSelect({
     [options, searchQuery],
   );
 
-  console.log(searchQuery, filteredOptions, options);
-
-  // Handle selection
-  const handleSelect = React.useCallback(
-    (optionValue: string) => {
-      if (value.includes(optionValue)) {
-        // Remove the option if already selected
-        onChange?.(value.filter((v) => v !== optionValue));
-      } else {
-        // Add the option if not at max limit
-        if (maxItems && value.length >= maxItems) {
-          return;
-        }
-        onChange?.([...value, optionValue]);
-      }
-      setSearchQuery('');
-    },
-    [onChange, value, maxItems],
-  );
-
-  // Remove a selected item
-  const handleRemove = React.useCallback(
-    (optionValue: string) => {
+  const handleSelection = (optionValue: string) => {
+    if (value.includes(optionValue)) {
       onChange?.(value.filter((v) => v !== optionValue));
-    },
-    [onChange, value],
-  );
+    } else if (!maxItems || value.length < maxItems) {
+      onChange?.([...value, optionValue]);
+    }
+    setSearchQuery('');
+  };
 
-  // Clear all selected items
-  const handleClear = React.useCallback(() => {
-    onChange?.([]);
-  }, [onChange]);
+  const handleRemove = (optionValue: string) => onChange?.(value.filter((v) => v !== optionValue));
+  const handleClear = () => onChange?.([]);
 
   return (
     <div className={cn('relative w-full', className)}>
@@ -112,6 +109,7 @@ export function MultiSelect({
       <Popover
         open={open}
         onOpenChange={setOpen}
+        modal
       >
         <PopoverTrigger asChild>
           <Button
@@ -173,6 +171,8 @@ export function MultiSelect({
             <CommandInput
               placeholder={searchPlaceholder}
               className='text-sm text-gray-900'
+              value={searchQuery}
+              onValueChange={setSearchQuery}
             />
             {selectedOptions.length > 0 && (
               <div className='flex items-center justify-between p-2 border-b'>
@@ -190,23 +190,23 @@ export function MultiSelect({
                 </Button>
               </div>
             )}
-            <CommandList className='w-full'>
+            <CommandList className='w-full max-h-[200px] overflow-y-auto'>
               <CommandEmpty className='p-2 text-sm text-gray-600'>{emptyMessage}</CommandEmpty>
               <CommandGroup>
-                {options.map((option) => {
+                {filteredOptions.map((option) => {
                   const isSelected = value.includes(option.value);
                   return (
                     <CommandItem
                       key={option.value}
                       value={option.value}
-                      onSelect={() => handleSelect(option.value)}
-                      keywords={[option.label, option?.description ?? '']}
+                      onSelect={() => handleSelection(option.value)}
+                      keywords={[option.label, option.description ?? '']}
                       className='cursor-pointer py-1.5'
                     >
                       <Checkbox
                         checked={isSelected}
                         className='text-white'
-                        onCheckedChange={() => handleSelect(option.value)}
+                        onCheckedChange={() => handleSelection(option.value)}
                       />
                       <div className='flex flex-col'>
                         <span className='text-sm text-gray-900'>{option.label}</span>
@@ -215,6 +215,13 @@ export function MultiSelect({
                     </CommandItem>
                   );
                 })}
+                <div ref={ref}>
+                  {isLoading && (
+                    <span className='text-sm flex bg-business-gray/60 text-white font-semibold h-5 w-full justify-center items-center mb-5'>
+                      Loading more...
+                    </span>
+                  )}
+                </div>
               </CommandGroup>
             </CommandList>
           </Command>

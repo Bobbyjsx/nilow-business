@@ -7,7 +7,6 @@ import { TimeToLiveForm } from './TimeToLiveForm';
 
 export const TimeToLiveSetupForms = () => {
   const router = useRouter();
-  const params = useSearchParams();
 
   const handleNextPage = () => {
     router.push('/dashboard/appointments');

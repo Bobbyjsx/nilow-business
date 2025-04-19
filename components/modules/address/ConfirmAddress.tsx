@@ -3,6 +3,7 @@ import { FloatingLabelInput } from '@/components/ui/floating-label-input';
 import { Controller, SubmitHandler, useFormContext } from 'react-hook-form';
 import { StoreLocationFormValues } from '../onboarding/location/constants';
 import { StateSelect } from './StateInput';
+import { useUpdateBusiness } from '@/app/api/business';
 
 interface Props {
   onReset: () => void;
@@ -18,10 +19,25 @@ const ConfirmAddress = ({ onReset, onFormSubmit }: Props) => {
   } = useFormContext<StoreLocationFormValues>();
 
   const formValues = watch();
+  const { executeUpdateBusiness, isBusinessUpdateExecuting } = useUpdateBusiness();
 
   const onSubmit: SubmitHandler<StoreLocationFormValues> = (data) => {
-    console.log(data);
-    onFormSubmit();
+    try {
+      executeUpdateBusiness({
+        location: {
+          city: data.city,
+          state: data.city,
+          country: data.country,
+          latitude: data.latitude,
+          longitude: data.longitude,
+          postal_code: Number(data.zipCode),
+          street_address: data.street,
+        },
+      });
+      onFormSubmit();
+    } catch (error) {
+      console.error('Error updating business:', error);
+    }
   };
 
   return (
@@ -40,7 +56,7 @@ const ConfirmAddress = ({ onReset, onFormSubmit }: Props) => {
           control={control}
           render={({ field }) => (
             <FloatingLabelInput
-              label='Street address 1'
+              label='Street address'
               {...field}
               error={errors?.street?.message}
               placeholder='Enter your address'
@@ -48,14 +64,26 @@ const ConfirmAddress = ({ onReset, onFormSubmit }: Props) => {
           )}
         />
         <Controller
-          name='street1'
+          name='country'
           control={control}
           render={({ field }) => (
             <FloatingLabelInput
-              label='Street address 2'
+              label='Country'
               {...field}
-              error={errors?.street1?.message}
-              placeholder='Enter your address'
+              error={errors?.country?.message}
+              placeholder='Enter your country'
+            />
+          )}
+        />
+
+        <Controller
+          name='state'
+          control={control}
+          render={({ field }) => (
+            <StateSelect
+              label='State'
+              {...field}
+              error={errors?.state?.message}
             />
           )}
         />
@@ -64,14 +92,14 @@ const ConfirmAddress = ({ onReset, onFormSubmit }: Props) => {
           name='city'
           control={control}
           render={({ field }) => (
-            <StateSelect
+            <FloatingLabelInput
               label='City'
               {...field}
               error={errors?.city?.message}
+              placeholder='Enter your city'
             />
           )}
         />
-
         <Controller
           name='zipCode'
           control={control}
@@ -141,8 +169,8 @@ const ConfirmAddress = ({ onReset, onFormSubmit }: Props) => {
         <Button
           type='submit'
           size='lg'
-          disabled={isSubmitting}
-          isLoading={isSubmitting}
+          disabled={isSubmitting || isBusinessUpdateExecuting}
+          isLoading={isSubmitting || isBusinessUpdateExecuting}
         >
           Continue
         </Button>

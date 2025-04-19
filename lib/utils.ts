@@ -3,7 +3,7 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { GOOGLE_MAPS_API_KEY } from './constants';
 
-export type UserAddress = { street: string; zipCode: string; city: string; country: string };
+export type UserAddress = { street: string; zipCode: string; city: string; country: string; state: string; longitude: string; latitude: string };
 export type SetUserAddress = (address: UserAddress) => void;
 
 export function cn(...inputs: ClassValue[]) {
@@ -40,6 +40,7 @@ export const reverseGeocode = (latLng: google.maps.LatLng, setAddress: SetUserAd
       let zipCode = '';
       let city = '';
       let country = '';
+      let state = '';
 
       results[0].address_components.forEach((component) => {
         const types = component.types;
@@ -59,16 +60,27 @@ export const reverseGeocode = (latLng: google.maps.LatLng, setAddress: SetUserAd
         if (types.includes('country')) {
           country = component.long_name;
         }
+
+        if (types.includes('administrative_area_level_2')) {
+          state = component.long_name;
+        }
       });
 
-      setAddress({ street, zipCode, city, country });
+      setAddress({
+        street,
+        zipCode,
+        city,
+        country,
+        state,
+        latitude: latLng.lat().toString(),
+        longitude: latLng.lng().toString(),
+      });
     } else {
       console.error('Geocoder failed due to:', status);
     }
   });
 };
 
-
 export const capitalizeFirstLetter = (str: string) => {
-  return str.charAt(0).toUpperCase() + str.slice(1);
+  return str?.charAt(0)?.toUpperCase() + str?.slice(1);
 };

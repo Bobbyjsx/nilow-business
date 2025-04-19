@@ -1,4 +1,5 @@
 'use client';
+import { useServiceTypes } from '@/app/api/services';
 import type { Service } from '@/components/modules/calendar/types';
 import { hoursOptions, minutesOptions } from '@/components/modules/onboarding/services/constants';
 import { priceTypeOptions } from '@/components/modules/onboarding/travel-fee/constants';
@@ -8,9 +9,11 @@ import { ImageUpload } from '@/components/ui/image-upload';
 import { Select } from '@/components/ui/select';
 import { TextArea } from '@/components/ui/textarea';
 import { Controller, useFormContext } from 'react-hook-form';
-import { serviceCategories } from './constants';
+import { serviceTargets } from './constants';
 
 export const ServicesForm = () => {
+  const { data: serviceTypes, isLoading: serviceTypesLoading } = useServiceTypes();
+
   const {
     formState: { errors },
     control,
@@ -48,23 +51,45 @@ export const ServicesForm = () => {
         </div>
       </div>
 
-      <Controller
-        name='serviceType'
-        control={control}
-        render={({ field }) => (
-          <Select
-            variant='searchable'
-            options={serviceCategories}
-            label='Service Type'
-            placeholder='Select Service Type'
-            className='w-full'
-            triggerClassName='!h-12'
-            error={errors.serviceType?.message}
-            fallbackOption={{ value: 'unassigned', label: 'Unassigned' }}
-            {...field}
+      <div className='flex w-full gap-x-3'>
+        <div className='flex-1'>
+          <Controller
+            name='target'
+            control={control}
+            render={({ field }) => (
+              <Select
+                label='Service Target'
+                options={serviceTargets}
+                placeholder={'Select a Service Target'}
+                className='w-full min-w-64'
+                triggerClassName='!h-12'
+                error={errors.serviceType?.message}
+                fallbackOption={{ value: 'unassigned', label: 'Unassigned' }}
+                {...field}
+              />
+            )}
           />
-        )}
-      />
+        </div>
+
+        <Controller
+          name='serviceType'
+          control={control}
+          render={({ field }) => (
+            //@ts-expect-error
+            <Select
+              variant='searchable'
+              options={serviceTypes?.map((type) => ({ value: type._id, label: type.name })) || []}
+              label='Service Type'
+              placeholder={serviceTypesLoading ? 'Loading...' : 'Select Service Type'}
+              className='w-full'
+              triggerClassName='!h-12'
+              error={errors.serviceType?.message}
+              fallbackOption={{ value: 'unassigned', label: 'Unassigned' }}
+              {...field}
+            />
+          )}
+        />
+      </div>
 
       <Controller
         name='photos'
@@ -75,7 +100,7 @@ export const ServicesForm = () => {
             value={field.value || []}
             onChange={field.onChange}
             error={errors.photos?.message}
-            maxImages={5}
+            maxImages={3}
           />
         )}
       />

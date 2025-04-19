@@ -6,10 +6,10 @@ enum TravelFeeKeys {
 }
 
 enum PriceType {
-  FIXED = 'fixed',
-  STARTS_AT = 'starts_at',
-  VARIES = 'varies',
-  FREE = 'free',
+  FIXED = 'FIXED',
+  STARTS_AT = 'PROGRESSIVE',
+  VARIES = 'FLEXIBLE',
+  FREE = 'FREE',
 }
 
 const TravelFeeSchema = z
@@ -29,16 +29,15 @@ const TravelFeeSchema = z
     {
       message: 'Required',
       path: ['travelFee'],
-    }
+    },
   );
 
 type TravelFeeFormValues = z.infer<typeof TravelFeeSchema>;
 
 const priceTypeOptions = Object.values(PriceType).map((type) => ({
   value: type,
-  label: capitalizeFirstLetter(type.split('_').join(' ')),
+  label: capitalizeFirstLetter(type.split('_').join(' ').toLowerCase()),
 }));
 
 export { PriceType, priceTypeOptions, TravelFeeKeys, TravelFeeSchema };
 export type { TravelFeeFormValues };
-

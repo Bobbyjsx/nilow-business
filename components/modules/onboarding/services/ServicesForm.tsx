@@ -1,11 +1,11 @@
+import { useServiceTypes } from '@/app/api/services';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { FloatingLabelInput } from '@/components/ui/floating-label-input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
-import { useEffect } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
-import { Service, formatDuration, hoursOptions, minutesOptions, serviceTypeOptions } from './constants';
+import { Service, hoursOptions, minutesOptions } from './constants';
 
 type ServiceFormProps = {
   onSubmit: (data: Service) => void;
@@ -15,25 +15,13 @@ type ServiceFormProps = {
 };
 
 export const ServiceForm = ({ onSubmit, onCancel, isEditing, isSubmitting = false }: ServiceFormProps) => {
+  const { data: serviceTypes, isLoading: serviceTypesLoading } = useServiceTypes();
+
   const {
     control,
     handleSubmit,
     formState: { errors },
-    watch,
-    setValue,
   } = useFormContext<Service>();
-
-  const hours = watch('hours');
-  const minutes = watch('minutes');
-
-  // Update duration when hours or minutes change
-  useEffect(() => {
-    if (hours && minutes) {
-      const formattedDuration = formatDuration(hours, minutes);
-      // If you need to store the formatted duration somewhere
-      // setValue('duration', formattedDuration);
-    }
-  }, [hours, minutes, setValue]);
 
   return (
     <form
@@ -60,10 +48,11 @@ export const ServiceForm = ({ onSubmit, onCancel, isEditing, isSubmitting = fals
         render={({ field }) => (
           <Select
             variant='searchable'
-            options={serviceTypeOptions}
+            options={serviceTypes?.map((type) => ({ value: type._id, label: type.name })) || []}
             label='Service Type'
-            placeholder='Select Service Type'
+            placeholder={serviceTypesLoading ? 'Loading...' : 'Select Service Type'}
             className='w-full'
+            disabled={serviceTypesLoading}
             error={errors.serviceType?.message}
             fallbackOption={{
               value: 'unassigned',
@@ -157,6 +146,7 @@ export const ServiceForm = ({ onSubmit, onCancel, isEditing, isSubmitting = fals
         <Button
           type='submit'
           isLoading={isSubmitting}
+          disabled={isSubmitting}
         >
           {isEditing ? 'Update' : 'Add'} Service
         </Button>

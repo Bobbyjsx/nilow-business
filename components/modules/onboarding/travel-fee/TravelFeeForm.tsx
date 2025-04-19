@@ -10,6 +10,9 @@ import { useEffect, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { MapView } from '../../address/MapView';
 import { PriceType, priceTypeOptions, TravelFeeFormValues, TravelFeeSchema } from './constants';
+import { useUpdateBusiness } from '@/app/api/business';
+import { toast } from '@/components/ui/toast';
+import { getServerError } from '@/lib/https';
 
 export const TravelFeeForm = ({ onNextPage }: { onNextPage: () => void }) => {
   const [location, setLocation] = useState<google.maps.LatLng | null>(null);
@@ -47,9 +50,35 @@ export const TravelFeeForm = ({ onNextPage }: { onNextPage: () => void }) => {
 
   const maxTravelDistance = formValues.maximumTravelDistance;
   console.log(errors);
+
+  const { executeUpdateBusiness, isBusinessUpdateExecuting } = useUpdateBusiness();
+
   const onSubmit: SubmitHandler<TravelFeeFormValues> = (data) => {
-    console.log(data);
-    onNextPage();
+    try {
+      executeUpdateBusiness(
+        {
+          business: {
+            max_travel_distance: formValues.maximumTravelDistance,
+            business_fee: formValues.travelFee,
+            business_fee_type: formValues.priceType,
+            business_fee_policy: formValues.travelPolicy,
+          },
+        },
+        {
+          onSuccess: () => {
+            onNextPage();
+          },
+          onError: (error: any) => {
+            console.error('Error updating business:', error);
+            const errMsg = getServerError(error);
+            toast.error({ message: errMsg });
+          },
+        },
+      );
+    } catch (error: any) {
+      console.error('Error updating business:', error);
+      toast.error({ message: error?.response?.data?.response?.message || error?.message || 'An error occurred' });
+    }
   };
 
   const isPriceFeeDisabled = () => {
@@ -143,6 +172,8 @@ export const TravelFeeForm = ({ onNextPage }: { onNextPage: () => void }) => {
           <Button
             type='submit'
             className='w-full'
+            isLoading={isBusinessUpdateExecuting}
+            disabled={isBusinessUpdateExecuting}
           >
             Continue
           </Button>

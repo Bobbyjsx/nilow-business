@@ -74,6 +74,7 @@ export function CalendarHeader({ currentDate, view, onDateChange, onViewChange, 
         >
           <Calendar
             mode='single'
+            defaultMonth={currentDate}
             selected={currentDate}
             onSelect={(date) => {
               if (date) {

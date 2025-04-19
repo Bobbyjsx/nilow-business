@@ -1,9 +1,14 @@
+import { BusinessServiceDetails, useUpdateBusiness } from '@/app/api/business';
 import { Button } from '@/components/ui/button';
+import { toast } from '@/components/ui/toast';
+import { formatPrice } from '@/lib/constants';
+import { getServerError } from '@/lib/https';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ChevronRight, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
-import { Service, ServicesFormValues, formatDuration, formatPrice, servicesFormSchema } from './constants';
+import { PriceType } from '../travel-fee/constants';
+import { Service, ServicesFormValues, formatDuration, servicesFormSchema } from './constants';
 import { ServicesModal } from './ServicesModal';
 
 type ServicesProps = {
@@ -31,9 +36,38 @@ export const Services = ({ onSubmitForm }: ServicesProps) => {
     name: 'services',
   });
 
+  const { executeUpdateBusiness, isBusinessUpdateExecuting } = useUpdateBusiness();
+
   const handleSubmitService: SubmitHandler<ServicesFormValues> = (data) => {
-    console.log('Form submitted with data:', data);
-    onSubmitForm?.();
+    try {
+      const constructedServicePayload = data?.services?.map(
+        (service): Partial<BusinessServiceDetails> => ({
+          name: service.name,
+          service_type: service.serviceType,
+          duration_hour: String(service.hours).padStart(2, '0'),
+          duration_minutes: String(service.minutes),
+          cost: Number(service.price),
+          cost_type: service.startsAt ? PriceType.STARTS_AT : PriceType.FIXED,
+          service_target: 'everyone',
+        }),
+      );
+      executeUpdateBusiness(
+        { services: constructedServicePayload },
+        {
+          onSuccess: () => {
+            onSubmitForm();
+            console.log('Form submitted with data:', data);
+          },
+          onError: (error) => {
+            const errMsg = getServerError(error);
+            toast.error({ message: errMsg });
+            console.error(error);
+          },
+        },
+      );
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const handleSaveService = (service: Service, index?: number) => {
@@ -56,7 +90,7 @@ export const Services = ({ onSubmitForm }: ServicesProps) => {
         ({
           name: '',
           serviceType: '',
-          hours: '1',
+          hours: '00',
           minutes: '00',
           price: '',
           startsAt: false,
@@ -135,6 +169,7 @@ export const Services = ({ onSubmitForm }: ServicesProps) => {
             type='submit'
             className='w-full'
             disabled={isSubmitting || fields.length === 0}
+            isLoading={isSubmitting || isBusinessUpdateExecuting}
           >
             {isSubmitting ? 'Saving...' : 'Continue'}
           </Button>

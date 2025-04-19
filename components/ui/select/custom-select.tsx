@@ -15,6 +15,8 @@ export interface CustomSelectProps {
   className?: string;
   disabled?: boolean;
   description?: string;
+  onScrollBottom?: () => void;
+  loadOptions?: () => Promise<Option[]>;
 }
 
 export const CustomSelect: React.FC<CustomSelectProps> = ({
@@ -27,7 +29,23 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   className,
   disabled = false,
   description,
+  onScrollBottom,
 }) => {
+  const contentRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+
+    const handleScroll = () => {
+      if (el.scrollTop + el.clientHeight >= el.scrollHeight - 10) {
+        onScrollBottom?.();
+      }
+    };
+
+    el.addEventListener('scroll', handleScroll);
+    return () => el.removeEventListener('scroll', handleScroll);
+  }, [onScrollBottom]);
   return (
     <div className={cn('relative w-full', className)}>
       {label && (
@@ -65,11 +83,9 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                 key={option.value}
                 value={option.value}
               >
-                <div className="flex flex-col">
+                <div className='flex flex-col'>
                   <span>{option.label}</span>
-                  {option.description && (
-                    <span className="text-xs text-gray-500">{option.description}</span>
-                  )}
+                  {option.description && <span className='text-xs text-gray-500'>{option.description}</span>}
                 </div>
               </SelectItem>
             ))}
@@ -77,7 +93,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
         </SelectContent>
       </Select>
       {error && <p className='mt-1 text-sm text-red-600'>{error}</p>}
-      {description && !error && <p className="mt-1 text-xs text-gray-500">{description}</p>}
+      {description && !error && <p className='mt-1 text-xs text-gray-500'>{description}</p>}
     </div>
   );
 };

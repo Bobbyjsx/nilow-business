@@ -1,5 +1,10 @@
+import { useUpdateBusiness } from '@/app/api/business';
+import { UserStatus } from '@/app/api/me';
 import { Button } from '@/components/ui/button';
 import { CustomSelect } from '@/components/ui/select';
+import { toast } from '@/components/ui/toast';
+import { getServerError } from '@/lib/https';
+import { useSession } from 'next-auth/react';
 import { Controller, useForm } from 'react-hook-form';
 import { timeToLiveOptions, TimeToLiveType } from './constants';
 
@@ -12,11 +17,53 @@ type TimeToLiveFormValues = {
 };
 
 export const TimeToLiveForm = ({ onSubmit }: TimeToLiveFormProps) => {
+  const { update: updateSession, data: session } = useSession();
   const {
     control,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<TimeToLiveFormValues>();
+
+  const { executeUpdateBusiness, isBusinessUpdateExecuting } = useUpdateBusiness();
+
+  const onFormSubmit = (data: TimeToLiveFormValues) => {
+    try {
+      executeUpdateBusiness(
+        {
+          business: {
+            when_to_live: Number(data.time),
+          },
+          is_complete: true,
+        },
+        {
+          onSuccess: (data) => {
+            const userStatus = data?.data?.data?.user?.status || UserStatus.NEW;
+            const businessName = data?.data?.data?.business?.business_name;
+
+            updateSession({
+              ...session,
+              user: {
+                ...session?.user,
+                isCompleted: true,
+                businessName: businessName,
+                status: userStatus,
+                businessId: data?.data?.data?.business?._id,
+              },
+            });
+            toast.success({ message: 'Profile created successfully' });
+            onSubmit();
+          },
+          onError: (error) => {
+            const errMsg = getServerError(error);
+            toast.error({ message: errMsg });
+            console.error(error);
+          },
+        },
+      );
+    } catch (error) {
+      console.error('Error submitting form:', error);
+    }
+  };
 
   return (
     <main>
@@ -25,7 +72,7 @@ export const TimeToLiveForm = ({ onSubmit }: TimeToLiveFormProps) => {
         <div className='text-sm text-muted-foreground mt-2'>You can choose when your profile will be visible to others.</div>
       </section>
       <form
-        onSubmit={handleSubmit(onSubmit)}
+        onSubmit={handleSubmit(onFormSubmit)}
         className='mt-10 space-y-5'
       >
         <Controller
@@ -43,7 +90,8 @@ export const TimeToLiveForm = ({ onSubmit }: TimeToLiveFormProps) => {
 
         <Button
           type='submit'
-          isLoading={isSubmitting}
+          isLoading={isSubmitting || isBusinessUpdateExecuting}
+          disabled={isSubmitting || isBusinessUpdateExecuting}
           size='lg'
           className='w-full'
         >

@@ -14,7 +14,7 @@ export default function WhereDoYouWork({ onFormSubmit }: Props) {
     handleSubmit,
     control,
     watch,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useFormContext<BusinessSetupFormValues>();
 
   const formValues = watch();
@@ -28,6 +28,7 @@ export default function WhereDoYouWork({ onFormSubmit }: Props) {
 
       console.log(data);
       onFormSubmit?.();
+      console.log('Form submitted successfully');
       router.push(`/onboarding/location?${searchParams.toString()}`);
     } catch (error) {
       console.error(error);
@@ -97,6 +98,8 @@ export default function WhereDoYouWork({ onFormSubmit }: Props) {
           type='submit'
           className='w-full mt-5'
           size={'lg'}
+          isLoading={isSubmitting}
+          disabled={isSubmitting}
         >
           Continue
         </Button>

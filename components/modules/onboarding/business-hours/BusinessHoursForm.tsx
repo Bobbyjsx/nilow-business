@@ -11,6 +11,9 @@ import { useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { BusinessHoursFormValues, BusinessHoursSchema, DAYS_OF_THE_WEEK, DEFAULT_HOURS } from './constant';
 import { EditBusinessModal } from './EditBusinessModal';
+import { useUpdateBusiness } from '@/app/api/business';
+import { getServerError } from '@/lib/https';
+import { toast } from '@/components/ui/toast';
 
 type BusinessHoursFormProps = {
   onSubmitForm: () => void;
@@ -53,10 +56,31 @@ export const BusinessHoursForm = ({ onSubmitForm }: BusinessHoursFormProps) => {
     },
   });
   const formValues = form.watch();
+  const { executeUpdateBusiness, isBusinessUpdateExecuting } = useUpdateBusiness();
 
   const onSubmit = (data: BusinessHoursFormValues) => {
-    onSubmitForm();
-    console.log(data);
+    try {
+      executeUpdateBusiness(
+        {
+          business: {
+            business_hours: data as any,
+          },
+        },
+        {
+          onSuccess: () => {
+            onSubmitForm();
+            console.log(data);
+          },
+          onError: (error) => {
+            const errMsg = getServerError(error);
+            toast.error({ message: errMsg });
+            console.error(error);
+          },
+        },
+      );
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const handleOpenModal = (day: keyof BusinessHoursFormValues) => {
@@ -126,6 +150,8 @@ export const BusinessHoursForm = ({ onSubmitForm }: BusinessHoursFormProps) => {
           <Button
             type='submit'
             className='w-full'
+            disabled={isBusinessUpdateExecuting}
+            isLoading={isBusinessUpdateExecuting}
           >
             Continue
           </Button>

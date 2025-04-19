@@ -1,7 +1,10 @@
 'use client';
+import { useUpdateBusiness } from '@/app/api/business';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { toast } from '@/components/ui/toast';
+import { getServerError } from '@/lib/https';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -36,10 +39,30 @@ const StaffForm = ({ onNextPage }: StaffFormProps) => {
   const {
     formState: { isSubmitting, isValid },
   } = form;
+  const { executeUpdateBusiness, isBusinessUpdateExecuting } = useUpdateBusiness();
 
   const onSubmit = (data: StaffFormState) => {
-    console.log(data);
-    onNextPage();
+    try {
+      executeUpdateBusiness(
+        {
+          business: {
+            team_size: data.staffCount,
+          },
+        },
+        {
+          onSuccess: () => {
+            onNextPage();
+          },
+          onError: (error: any) => {
+            console.error('Error updating business:', error);
+            const errMsg = getServerError(error);
+            toast.error({ message: errMsg });
+          },
+        },
+      );
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (
@@ -106,7 +129,8 @@ const StaffForm = ({ onNextPage }: StaffFormProps) => {
           />
           <Button
             type='submit'
-            disabled={isSubmitting || !isValid}
+            disabled={isSubmitting || !isValid || isBusinessUpdateExecuting}
+            isLoading={isBusinessUpdateExecuting}
             className='w-full py-6 text-lg font-medium'
           >
             Continue

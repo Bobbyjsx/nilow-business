@@ -20,9 +20,8 @@ export const SelectAddress = ({ onSelectAddress }: Props) => {
   const [location, setLocation] = useState<google.maps.LatLng | null>(null);
   const [address, setAddress] = useState<UserAddress | undefined>();
   const [searchValue, setSearchValue] = useState('');
-
   const { suggestions, loading } = useAddressSuggestions({ q: searchValue });
-
+  console.log('Suggestions:', address);
   useEffect(() => {
     const loadMaps = async () => {
       try {
@@ -41,6 +40,10 @@ export const SelectAddress = ({ onSelectAddress }: Props) => {
     setValue('city', selectedAddress.city || '');
     setValue('street', selectedAddress.street || '');
     setValue('zipCode', selectedAddress.zipCode || '');
+    setValue('state', selectedAddress.state || '');
+    setValue('country', selectedAddress.country || '');
+    setValue('latitude', selectedAddress.latitude || '');
+    setValue('longitude', selectedAddress.longitude || '');
     onSelectAddress();
   };
 

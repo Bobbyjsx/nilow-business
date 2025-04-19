@@ -2,8 +2,10 @@
 
 import { Check, ChevronsUpDown } from 'lucide-react';
 import * as React from 'react';
+import { useInView } from 'react-intersection-observer';
 
 import { cn } from '@/lib/utils';
+import { useDebounce } from 'use-debounce';
 import { Button } from '../button';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../command';
 import { Popover, PopoverContent, PopoverTrigger } from '../popover';
@@ -24,6 +26,10 @@ export interface SearchableSelectProps {
   triggerClassName?: string;
   contentClassName?: string;
   fallbackOption?: Option;
+  loadOptions?: (search?: string) => void;
+  onMenuScrollToBottom?: () => void;
+  hasMore?: boolean;
+  isLoading?: boolean;
   description?: string;
 }
 
@@ -43,32 +49,43 @@ export function SearchableSelect({
   contentClassName,
   fallbackOption,
   description,
+  isLoading,
+  onMenuScrollToBottom,
+  loadOptions,
 }: SearchableSelectProps) {
   const [open, setOpen] = React.useState(defaultOpen);
   const [searchQuery, setSearchQuery] = React.useState('');
+  const [debouncedSearch] = useDebounce(searchQuery, 200);
+  const { ref, inView } = useInView();
 
-  // Find the selected option label
+  // Load options based on debounced search
+  React.useEffect(() => {
+    if (loadOptions) {
+      loadOptions(debouncedSearch);
+    }
+  }, [debouncedSearch, loadOptions]);
+
+  // Trigger infinite scroll when in view
+  React.useEffect(() => {
+    if (inView) {
+      onMenuScrollToBottom?.();
+    }
+  }, [inView, onMenuScrollToBottom]);
+
   const selectedOption = React.useMemo(() => options.find((option) => option.value === value), [options, value]);
 
-  // Filter options based on search query
-  // const filteredOptions = React.useMemo(
-  //   () =>
-  //     searchQuery === ''
-  //       ? options
-  //       : options.filter(
-  //           (option) =>
-  //             option.label?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-  //             option.description?.toLowerCase().includes(searchQuery.toLowerCase()),
-  //         ),
-  //   [options, searchQuery],
-  // );
+  const filteredOptions = React.useMemo(() => {
+    return options.filter((option) => {
+      const search = searchQuery.toLowerCase();
+      return option.label.toLowerCase().includes(search) || option.description?.toLowerCase().includes(search);
+    });
+  }, [options, searchQuery]);
 
-  // Handle selection
   const handleSelect = React.useCallback(
     (currentValue: string) => {
       onChange?.(currentValue);
       setOpen(false);
-      // setSearchQuery('');
+      setSearchQuery('');
     },
     [onChange],
   );
@@ -112,8 +129,10 @@ export function SearchableSelect({
             <CommandInput
               placeholder={searchPlaceholder}
               className='text-sm text-gray-900'
+              value={searchQuery}
+              onValueChange={setSearchQuery}
             />
-            <CommandList className='w-full'>
+            <CommandList className='w-full max-h-[200px] overflow-y-auto'>
               <CommandEmpty className='p-2 text-sm text-gray-600'>
                 {emptyMessage}
                 {fallbackOption && (
@@ -131,11 +150,10 @@ export function SearchableSelect({
                 )}
               </CommandEmpty>
               <CommandGroup>
-                {options.map((option) => (
+                {filteredOptions.map((option) => (
                   <CommandItem
                     key={option.value}
                     value={option.value}
-                    keywords={[option.label, option?.description ?? '']}
                     onSelect={() => handleSelect(option.value)}
                     className='cursor-pointer py-1.5'
                   >
@@ -146,6 +164,14 @@ export function SearchableSelect({
                     </div>
                   </CommandItem>
                 ))}
+                {isLoading ? (
+                  <div
+                    ref={ref}
+                    className='py-2 text-sm text-gray-500 text-center'
+                  >
+                    Loading more...
+                  </div>
+                ) : null}
               </CommandGroup>
             </CommandList>
           </Command>

@@ -1,19 +1,23 @@
 'use client';
 
+import { Appointment } from '@/app/api/appointments';
 import { cn } from '@/lib/utils';
-import { format, isSameDay } from 'date-fns';
+import { addMinutes, format, isSameDay } from 'date-fns';
 import { AnimatePresence, motion } from 'framer-motion';
 import { LucideCalendar, LucideClock, LucideMapPin } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { formatTo12Hour } from '../onboarding/business-hours/constant';
+import { useAppointments } from './appointment-context';
 import { generateTimeSlots, isTimeSlotDisabled } from './calendar-utils';
-import { ANIMATION_VARIANTS, CUSTOM_SCROLLBAR_STYLES, getTimeSlotBackground } from './constants';
-import type { CalendarSettings, Event } from './types';
+import { ANIMATION_VARIANTS, convertHHMMToDate, CUSTOM_SCROLLBAR_STYLES, getTimeSlotBackground } from './constants';
+import { CalendarDaySkeleton } from './day-skeleton';
+import type { CalendarSettings } from './types';
 
 interface CalendarDayViewProps {
   date: Date;
-  events: Event[];
+  events: Appointment[];
   settings: CalendarSettings;
-  onEventSelect: (event: Event) => void;
+  onEventSelect: (event: Appointment) => void;
   onTimeSlotSelect: (start: Date, end: Date) => void;
 }
 
@@ -23,7 +27,7 @@ export function CalendarDayView({ date, events, settings, onEventSelect, onTimeS
   const [hoveredTimeSlot, setHoveredTimeSlot] = useState<number | null>(null);
 
   // Filter events for the current day
-  const dayEvents = events.filter((event) => isSameDay(new Date(event.start), date));
+  const dayEvents = events.filter((event) => isSameDay(new Date(event.appointment_date), date));
 
   // Generate time slots based on settings
   const timeSlots = generateTimeSlots(settings.startHour, settings.endHour);
@@ -73,9 +77,9 @@ export function CalendarDayView({ date, events, settings, onEventSelect, onTimeS
   };
 
   // Calculate event position and height
-  const getEventStyle = (event: Event) => {
-    const startDate = new Date(event.start);
-    const endDate = new Date(event.end);
+  const getEventStyle = (event: Appointment) => {
+    const startDate = convertHHMMToDate(event?.start_time);
+    const endDate = new Date(addMinutes(convertHHMMToDate(event?.start_time), event?.appointment_duration));
 
     const totalMinutes = (settings.endHour - settings.startHour) * 60;
     const startMinutes = (startDate.getHours() - settings.startHour) * 60 + startDate.getMinutes();
@@ -87,9 +91,9 @@ export function CalendarDayView({ date, events, settings, onEventSelect, onTimeS
     return {
       top: `${top}%`,
       height: `${height}%`,
-      backgroundColor: event.color || 'rgba(59, 130, 246, 0.15)',
+      backgroundColor: 'rgba(59, 130, 246, 0.15)',
       borderLeft: '4px solid #3b82f6',
-      color: event.textColor || '#374151',
+      color: '#374151',
     };
   };
 
@@ -100,6 +104,12 @@ export function CalendarDayView({ date, events, settings, onEventSelect, onTimeS
     const now = new Date();
     return isSameDay(date, now) && now.getHours() === hour;
   };
+
+  const { isAppointmentsLoading } = useAppointments();
+
+  if (isAppointmentsLoading) {
+    return <CalendarDaySkeleton />;
+  }
 
   return (
     <div
@@ -196,19 +206,19 @@ export function CalendarDayView({ date, events, settings, onEventSelect, onTimeS
                 className='absolute left-[80px] right-2 rounded-lg shadow-sm px-3 py-2 overflow-hidden cursor-pointer backdrop-blur-[2px]'
                 style={getEventStyle(event)}
                 onClick={() => onEventSelect(event)}
-                key={event.id}
+                key={event._id}
               >
-                <div className='font-medium text-gray-800'>{event.title}</div>
+                {/* <div className='font-medium text-gray-800'>{event.title}</div> */}
                 <div className='flex items-center gap-1 text-xs text-gray-600 mt-1'>
                   <LucideClock className='h-3 w-3' />
-                  {format(new Date(event.start), settings.timeFormat)} - {format(new Date(event.end), settings.timeFormat)}
+                  {formatTo12Hour(event?.start_time)} -{' '}
+                  {format(addMinutes(convertHHMMToDate(event?.start_time), event?.appointment_duration), settings.timeFormat)}
                 </div>
-                {event.location && (
-                  <div className='flex items-center gap-1 text-xs text-gray-600 mt-1'>
-                    <LucideMapPin className='h-3 w-3' />
-                    <span className='truncate'>{event.location}</span>
-                  </div>
-                )}
+
+                <div className='flex items-center gap-1 text-xs text-gray-600 mt-1'>
+                  <LucideMapPin className='h-3 w-3' />
+                  <span className='truncate'>{event?.isHomeService ? 'Home Service' : 'Clients location'}</span>
+                </div>
               </motion.div>
             ))}
           </AnimatePresence>

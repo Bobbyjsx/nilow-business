@@ -1,8 +1,17 @@
 'use client';
 import { Loader } from '@/components/ui/loader';
 import { motion } from 'framer-motion';
+import { useEffect } from 'react';
 
 export default function LoadingScreen() {
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      window.location.reload();
+    }, 3000);
+
+    return () => clearTimeout(timeout);
+  }, []);
+
   return (
     <div className='flex items-center justify-center h-screen bg-gradient-to-b from-white to-gray-100'>
       <div className='w-full max-w-md px-8 flex flex-col items-center justify-center'>

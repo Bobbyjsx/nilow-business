@@ -1,16 +1,19 @@
 'use client';
 
+import { Appointment } from '@/app/api/appointments';
 import { cn } from '@/lib/utils';
-import { eachDayOfInterval, endOfWeek, format, isSameDay, startOfWeek } from 'date-fns';
+import { addHours, eachDayOfInterval, endOfWeek, format, isSameDay, startOfWeek } from 'date-fns';
 import { useEffect, useRef } from 'react';
+import { useAppointments } from './appointment-context';
 import { generateTimeSlots, isTimeSlotDisabled } from './calendar-utils';
-import type { CalendarSettings, Event } from './types';
+import type { CalendarSettings } from './types';
+import { CalendarSkeleton } from './week-skeleton';
 
 interface CalendarWeekViewProps {
   date: Date;
-  events: Event[];
+  events: Appointment[];
   settings: CalendarSettings;
-  onEventSelect: (event: Event) => void;
+  onEventSelect: (event: Appointment) => void;
   onTimeSlotSelect: (start: Date, end: Date) => void;
 }
 
@@ -75,13 +78,13 @@ export function CalendarWeekView({ date, events, settings, onEventSelect, onTime
 
   // Get events for a specific day
   const getEventsForDay = (day: Date) => {
-    return events.filter((event) => isSameDay(new Date(event.start), day));
+    return events.filter((event) => isSameDay(new Date(event.start_time), day));
   };
 
   // Calculate event position and height
-  const getEventStyle = (event: Event) => {
-    const startDate = new Date(event.start);
-    const endDate = new Date(event.end);
+  const getEventStyle = (event: Appointment) => {
+    const startDate = new Date(event.start_time);
+    const endDate = event?.end_time ? new Date(event.end_time) : addHours(event?.start_time, 1.5);
 
     const totalMinutes = (settings.endHour - settings.startHour) * 60;
     const startMinutes = (startDate.getHours() - settings.startHour) * 60 + startDate.getMinutes();
@@ -93,10 +96,16 @@ export function CalendarWeekView({ date, events, settings, onEventSelect, onTime
     return {
       top: `${top}%`,
       height: `${height}%`,
-      backgroundColor: event.color || '#d1d5f0',
-      color: event.textColor || '#000000',
+      backgroundColor: '#d1d5f0',
+      color: '#000000',
     };
   };
+
+  const { isAppointmentsLoading } = useAppointments();
+
+  if (isAppointmentsLoading) {
+    return <CalendarSkeleton />;
+  }
 
   return (
     <div
@@ -192,7 +201,7 @@ export function CalendarWeekView({ date, events, settings, onEventSelect, onTime
 
               return (
                 <div
-                  key={`${day}-${event.id}`}
+                  key={`${day}-${event._id}`}
                   className='absolute rounded-md px-2 py-1 overflow-hidden text-sm cursor-pointer hover:opacity-90 transition-opacity'
                   style={{
                     ...getEventStyle(event),
@@ -201,11 +210,12 @@ export function CalendarWeekView({ date, events, settings, onEventSelect, onTime
                   }}
                   onClick={() => onEventSelect(event)}
                 >
-                  <div className='font-medium truncate'>{event.title}</div>
+                  {/* <div className='font-medium truncate'>{event.title}</div> */}
                   <div className='text-xs'>
-                    {format(new Date(event.start), settings.timeFormat)} -{format(new Date(event.end), settings.timeFormat)}
+                    {format(new Date(event.start_time), settings.timeFormat)} -
+                    {format(new Date(event?.end_time ? event.end_time : addHours(event?.start_time, 1.5)), settings.timeFormat)}
                   </div>
-                  {event.location && <div className='text-xs truncate'>{event.location}</div>}
+                  {event?.isHomeService ? 'Home Service' : 'Clients location'}
                 </div>
               );
             });

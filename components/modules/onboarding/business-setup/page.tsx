@@ -1,8 +1,10 @@
 'use client';
+import { useUpdateBusiness } from '@/app/api/business';
 import { MultiPartForm, MultiPartFormPage } from '@/components/common/MultiPartForm';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { signOut, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { Progress_Step } from '../constants';
 import AboutYou from './AboutYou';
@@ -10,9 +12,81 @@ import { BusinessSetupFormSchema, BusinessSetupFormValues, BusinessSetupPageKeys
 import PickCategory from './PickCategory';
 import WhereDoYouWork from './WhereDoYouWork';
 
+interface FormValues {
+  category: string;
+  businessName: string;
+  yourName: string;
+  phoneNumber: string;
+}
+
+interface SessionData {
+  user?: {
+    category?: string;
+    businessName?: string;
+    username?: string;
+    phoneNumber?: string;
+  };
+}
+
+interface Payload {
+  business?: {
+    business_name?: string;
+    business_category?: string;
+  };
+  user?: {
+    username?: string;
+    phone_number?: string;
+    device_token?: string;
+  };
+}
+
+function createPayload(values: FormValues, sessionData: SessionData | null): Payload {
+  const payload: Payload = {
+    business: {},
+    user: {},
+  };
+
+  const sessionUser = sessionData?.user;
+
+  // Add businessName if it has changed or doesn't exist in session
+  if (values.businessName && values.businessName !== sessionUser?.businessName) {
+    payload.business!.business_name = values.businessName;
+  }
+
+  // Add category if it has changed or doesn't exist in session
+  if (values.category && values.category !== sessionUser?.category) {
+    payload.business!.business_category = values.category;
+  }
+
+  // Add username if it has changed or doesn't exist in session
+  if (values.yourName && values.yourName !== sessionUser?.username) {
+    payload.user!.username = values.yourName;
+  }
+
+  // Add phoneNumber if it has changed or doesn't exist in session
+  if (values.phoneNumber && values.phoneNumber !== sessionUser?.phoneNumber) {
+    payload.user!.phone_number = values.phoneNumber;
+    payload.user!.device_token = '';
+  }
+
+  // Only include user if it has any data
+  if (payload.user && Object.keys(payload.user).length === 0) {
+    delete payload.user;
+  }
+
+  // Only include business if it has any data
+  if (payload.business && Object.keys(payload.business).length === 0) {
+    delete payload.business;
+  }
+
+  return payload;
+}
+
 export const BusinessSetupForms = () => {
   const router = useRouter();
   const [currentPage, setCurrentPage] = useState<BusinessSetupPageKeys>(BusinessSetupPageKeys.CATEGORY);
+  const { executeUpdateBusiness } = useUpdateBusiness();
+  const { data: sessionData, update: updateSession } = useSession();
 
   const methods = useForm<BusinessSetupFormValues>({
     resolver: zodResolver(BusinessSetupFormSchema),
@@ -21,6 +95,19 @@ export const BusinessSetupForms = () => {
       homeService: false,
     },
   });
+
+  useEffect(() => {
+    if (!sessionData?.user) return;
+    if (sessionData.user.businessName && methods.getValues('businessName') === sessionData.user.businessName) {
+      methods.setValue('businessName', sessionData.user.businessName);
+    }
+    if (sessionData.user.phoneNumber && methods.getValues('phoneNumber') === sessionData.user.phoneNumber) {
+      methods.setValue('phoneNumber', sessionData.user.phoneNumber);
+    }
+    if (sessionData.user.username && methods.getValues('yourName') === sessionData.user.username) {
+      methods.setValue('yourName', sessionData.user.username);
+    }
+  }, [sessionData?.user]);
 
   const handleNextPage = () => {
     const currentIndex = multiPartPages.findIndex((page) => page.key === currentPage);
@@ -33,8 +120,29 @@ export const BusinessSetupForms = () => {
     }
   };
 
-  const handleFormCompletion = () => {
+  const handleNoPrevPage = () => {
+    signOut();
     router.push('/onboarding/auth');
+  };
+  const handleBusinessSetupUpload = () => {
+    const values = methods.getValues();
+
+    const payload = createPayload(values, sessionData);
+    console.log('payload', payload);
+
+    try {
+      updateSession({
+        ...sessionData,
+        user: {
+          ...(sessionData && sessionData.user && { ...sessionData.user }),
+          businessName: values.businessName,
+        },
+      });
+      executeUpdateBusiness(payload);
+      handleNextPage();
+    } catch (error) {
+      console.error('Error uploading business setup:', error);
+    }
   };
 
   const multiPartPages: MultiPartFormPage<BusinessSetupPageKeys>[] = [
@@ -51,7 +159,7 @@ export const BusinessSetupForms = () => {
     {
       key: BusinessSetupPageKeys.PAYMENT,
       progress: Progress_Step.STEP_THREE,
-      pageNode: <WhereDoYouWork onFormSubmit={handleNextPage} />,
+      pageNode: <WhereDoYouWork onFormSubmit={handleBusinessSetupUpload} />,
     },
   ];
 
@@ -61,7 +169,7 @@ export const BusinessSetupForms = () => {
         pages={multiPartPages}
         currentPage={currentPage}
         setCurrentPage={setCurrentPage}
-        onLastPage={handleFormCompletion}
+        onLastPage={handleNoPrevPage}
       />
     </FormProvider>
   );

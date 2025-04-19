@@ -7,7 +7,7 @@ enum BusinessSetupPageKeys {
 }
 
 const BusinessSetupFormSchema = z.object({
-  category: z.string().min(2).max(100),
+  category: z.string(),
   yourName: z.string().min(2).max(100),
   businessName: z.string().min(2).max(100),
   phoneNumber: z.string().min(10, 'Requires at least 10 digits').max(15),

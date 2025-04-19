@@ -1,4 +1,5 @@
-import { Toaster } from '@/components/ui/sonner';
+import { SessionProvider } from 'next-auth/react';
+import { Toaster } from '@/components/ui/toast';
 import { TanstackProvider } from '@/providers/tanstack-provider';
 import { ThemeProvider } from '@/providers/theme-provider';
 import type { Metadata, Viewport } from 'next';
@@ -114,15 +115,17 @@ export default function RootLayout({
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <TanstackProvider>
-          <Toaster />
-          <ThemeProvider
-            attribute='class'
-            defaultTheme='light'
-            enableSystem
-            disableTransitionOnChange
-          >
-            {children}
-          </ThemeProvider>
+          <SessionProvider>
+            <Toaster />
+            <ThemeProvider
+              attribute='class'
+              defaultTheme='light'
+              enableSystem
+              disableTransitionOnChange
+            >
+              {children}
+            </ThemeProvider>
+          </SessionProvider>
         </TanstackProvider>
       </body>
     </html>

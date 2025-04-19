@@ -33,6 +33,7 @@ export const FloatingLabelInput = ({
   const handleFocus = () => setIsFocused(true);
   const handleBlur = () => {
     setIsFocused(false);
+    props?.onBlur?.();
   };
 
   const handleLabelClick = () => {
