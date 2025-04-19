@@ -10,7 +10,7 @@ export const authConfig = {
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
-      const isCompleted = auth?.user?.isCompleted || auth?.user.status === UserStatus.ACTIVE;
+      const isCompleted = auth?.user?.isCompleted || auth?.user?.status === UserStatus.ACTIVE;
 
       // console.log('IS auth completed', isCompleted, auth?.user);
       const isAuthPage = nextUrl.pathname.startsWith('/onboarding/auth');
@@ -51,10 +51,10 @@ export const authConfig = {
           ...token,
           user: {
             ...(token.user as Record<string, any>),
-            ...(session.user.isCompleted !== undefined && { isCompleted: session.user.isCompleted }),
-            ...(session.user.status !== undefined && { status: session.user.status }),
-            ...(session.user.businessId !== undefined && { businessId: session.user.businessId }),
-            ...(session.user.businessName !== undefined && { businessName: session.user.businessName }),
+            ...(session.user?.isCompleted !== undefined && { isCompleted: session.user.isCompleted }),
+            ...(session.user?.status !== undefined && { status: session.user.status }),
+            ...(session.user?.businessId !== undefined && { businessId: session.user.businessId }),
+            ...(session.user?.businessName !== undefined && { businessName: session.user.businessName }),
           },
         };
       }
