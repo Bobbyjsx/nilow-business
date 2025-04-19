@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 export default function LoadingScreen() {
   useEffect(() => {
     const timeout = setTimeout(() => {
+      console.log('Loading completed');
       window.location.reload();
     }, 3000);
 
