@@ -1,8 +1,10 @@
 import { BASE_API_URL } from '@/lib/constants';
 import { getServerError } from '@/lib/https';
+import { clientConfig } from '@/rollbar';
 import type { DefaultSession } from 'next-auth';
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
+import Rollbar from 'rollbar';
 import { VerifyOtp } from './api/auth';
 import { authConfig } from './auth.config';
 
@@ -30,6 +32,9 @@ export const verifyToken = async (payload: VerifyOtp) => {
 
   const data = await response.json().catch((e) => {
     console.log('Authhed error:', JSON.stringify(data));
+    const rollbar = new Rollbar(clientConfig);
+
+    rollbar.error('Auth Error', e);
     return {};
   });
 
