@@ -3,7 +3,6 @@ import { useUploadImage } from '@/app/api/images';
 import { CreateBusinessService, useGetSingleBusinessService, useUpdateBusinessService } from '@/app/api/services';
 import { FadeIn } from '@/components/common/fade-in';
 import type { Service } from '@/components/modules/calendar/types';
-import { parseDuration } from '@/components/modules/onboarding/services/constants';
 import { PriceType } from '@/components/modules/onboarding/travel-fee/constants';
 import { Button } from '@/components/ui/button';
 import { Loader } from '@/components/ui/loader';
@@ -37,8 +36,8 @@ export const ServiceDetails = () => {
 
   useEffect(() => {
     if (service) {
-      setValue('hours', service.duration_hour || parseDuration(service.duration || '00h00m').hours);
-      setValue('minutes', service.duration_minute || parseDuration(service.duration || '00h00m').minutes);
+      setValue('hours', service.duration_hour || '00');
+      setValue('minutes', service.duration_minutes || '00');
       setValue('name', service.name || '');
       setValue('description', service.description || '');
       setValue('price', service.cost || 0);
@@ -72,8 +71,8 @@ export const ServiceDetails = () => {
         service_color: data.color as string,
         service_images: data?.photos || [],
         service_target: data?.target,
-        duration_hour: Number(data.hours),
-        duration_minute: Number(data.minutes),
+        duration_hour: String(data.hours),
+        duration_minutes: String(data.minutes),
       };
 
       if (data.photos) {

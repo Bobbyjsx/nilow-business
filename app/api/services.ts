@@ -21,8 +21,8 @@ export type BusinessService = {
   service_category: ServiceType;
   business: any;
   status: number;
-  duration_hours: number;
-  duration_minutes: number;
+  duration_hour: string;
+  duration_minutes: string;
 };
 
 import { z } from 'zod';

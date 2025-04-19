@@ -31,9 +31,9 @@ export const FloatingLabelInput = ({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFocus = () => setIsFocused(true);
-  const handleBlur = () => {
+  const handleBlur = (event: React.FocusEvent<HTMLInputElement>) => {
     setIsFocused(false);
-    props?.onBlur?.();
+    props?.onBlur?.(event);
   };
 
   const handleLabelClick = () => {
