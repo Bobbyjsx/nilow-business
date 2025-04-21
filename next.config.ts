@@ -3,6 +3,7 @@ import type { NextConfig } from 'next';
 import path from 'path';
 
 const cspHeader = `
+  connect-src 'self' https://api.convex.dev http://34.35.1.135/api https://octopus-one-peacock.ngrok-free.app/api;
     default-src 'self';
     script-src 'self' 'unsafe-eval' 'unsafe-inline';
     style-src 'self' 'unsafe-inline';
