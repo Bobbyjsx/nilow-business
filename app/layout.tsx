@@ -54,18 +54,12 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    type: 'website',
-    locale: 'en_US',
-    url: 'https://nilow-business.vercel.app',
     title: 'Nillow | Book Your Services Online',
     description: 'Nillow is your all-in-one platform for booking beauty, wellness, and professional services.',
     siteName: 'Nillow',
     images: [
       {
-        url: '/og-image.png',
-        width: 1200,
-        height: 630,
-        alt: 'Nillow - Book Services Online',
+        url: 'https://res.cloudinary.com/dyq13myey/image/upload/f_auto,q_auto/gztsdhfcgykktqhkqalv',
       },
     ],
   },
