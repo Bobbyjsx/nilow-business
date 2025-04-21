@@ -1,6 +1,5 @@
 'use client';
-import { useSendOtp, useVerifyOtp, VerifyOtp } from '@/app/api/auth';
-import { signIn } from '@/app/auth';
+import { useSendOtp, VerifyOtp } from '@/app/api/auth';
 import { FadeIn } from '@/components/common/fade-in';
 import { Button } from '@/components/ui/button';
 import { FloatingLabelInput } from '@/components/ui/floating-label-input';
@@ -11,7 +10,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRight, CheckCircle2, Info, Mail } from 'lucide-react';
 import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect, useActionState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -111,12 +110,14 @@ const SignInModule = () => {
       authFormData.append('password', data.otp);
 
       formAction(authFormData);
-      //
-      // const res = await signInUser({ email, password: data.otp });
-      // console.log('res', res);
     } catch (error: any) {
       console.log('err', error);
-      if (isRedirectError(error)) return;
+      if (isRedirectError(error)) {
+        setTimeout(() => {
+          router.push('/');
+        }, 1000);
+        return { status: 200 };
+      }
       toast.error({
         title: 'Error',
         message: error?.response?.data?.response?.message || error?.message || 'Failed to verify OTP',

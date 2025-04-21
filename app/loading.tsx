@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 
 export default function LoadingScreen() {
   return (
-    <div className='flex items-center justify-center h-screen bg-gradient-to-b from-white to-gray-100'>
+    <div className='flex items-center justify-center h-screen bg-gradient-to-b from-white to-gray-100 relative z-50'>
       <div className='w-full max-w-md px-8 flex flex-col items-center justify-center'>
         <motion.div
           className='relative flex justify-center mb-4'

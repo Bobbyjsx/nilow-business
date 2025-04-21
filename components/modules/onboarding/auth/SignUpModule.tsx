@@ -1,18 +1,18 @@
 'use client';
-import { useSendOtp, useVerifyOtp, VerifyOtp } from '@/app/api/auth';
+import { useSendOtp, VerifyOtp } from '@/app/api/auth';
 import { FadeIn } from '@/components/common/fade-in';
 import { Button } from '@/components/ui/button';
 import { FloatingLabelInput } from '@/components/ui/floating-label-input';
 import { Input } from '@/components/ui/input';
+import { toast } from '@/components/ui/toast';
+import { authenticate } from '@/lib/actions';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CheckCircle2, Info, Mail, ArrowRight } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Info, Mail } from 'lucide-react';
 import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect, useActionState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { toast } from '@/components/ui/toast';
 import { z } from 'zod';
-import { authenticate, signInUser } from '@/lib/actions';
 
 const emailSchema = z.object({
   email: z.string().email().min(2).max(100),
@@ -92,6 +92,7 @@ const SignUpModule = () => {
     }
   };
 
+  const router = useRouter();
   // Submit handler
   const verifyOtp = async (data: VerifyOtp) => {
     try {
@@ -100,12 +101,14 @@ const SignUpModule = () => {
       authFormData.append('password', data.otp);
 
       formAction(authFormData);
-      //
-      // const res = await signInUser({ email, password: data.otp });
-      // console.log('res', res);
     } catch (error: any) {
       console.log('err', error);
-      if (isRedirectError(error)) return;
+      if (isRedirectError(error)) {
+        setTimeout(() => {
+          router.push('/');
+        }, 1000);
+        return { status: 200 };
+      }
       toast.error({
         title: 'Error',
         message: error?.response?.data?.response?.message || error?.message || 'Failed to verify OTP',

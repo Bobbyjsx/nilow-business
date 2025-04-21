@@ -1,4 +1,3 @@
-/// ./src/app/global-error.js
 'use client';
 
 import { ErrorFallBackComponent } from '@/components/common/ErrorFallBackComponent';
@@ -8,20 +7,26 @@ import { useEffect } from 'react';
 import { FallbackProps } from 'react-error-boundary';
 import Rollbar from 'rollbar';
 
-export default function GlobalError({ error, resetErrorBoundary }: FallbackProps) {
+export default function GlobalError({ error }: FallbackProps) {
   useEffect(() => {
     const rollbar = new Rollbar(clientConfig);
-
     rollbar.error(error);
+
     Sentry.captureException(error);
   }, [error]);
 
+  const handleReset = () => {
+    if (typeof window !== 'undefined') {
+      window.location.reload();
+    }
+  };
+
   return (
     <html>
-      <body>
+      <body className='flex h-screen w-screen items-center justify-center'>
         <ErrorFallBackComponent
           error={error}
-          resetErrorBoundary={resetErrorBoundary}
+          resetErrorBoundary={handleReset}
         />
       </body>
     </html>

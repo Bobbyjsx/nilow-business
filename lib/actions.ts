@@ -27,6 +27,8 @@ export const signInUser = async (signInValues: { email: string; password: string
   try {
     await signIn('credentials', signInValues);
   } catch (error) {
+    console.log('Auth action error:', error);
+
     // https://github.com/nextauthjs/next-auth/discussions/9389
     if (isRedirectError(error)) {
       throw error;

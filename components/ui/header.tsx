@@ -75,11 +75,11 @@ export function Header() {
   const handleLogout = async () => {
     try {
       await signOut();
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('userToken');
-        document.cookie = 'authjs.csrf-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-        document.cookie = 'authjs.session-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-      }
+      // if (typeof window !== 'undefined') {
+      //   localStorage.removeItem('userToken');
+      //   document.cookie = 'authjs.csrf-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      //   document.cookie = 'authjs.session-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      // }
     } catch (error) {
       console.error('Error signing out:', error);
     }
@@ -88,7 +88,7 @@ export function Header() {
   return (
     <div className='flex flex-col'>
       {/* Header */}
-      <header className='sticky top-0 z-50 w-full border-b bg-gradient-to-tr from-business-dark via-business-slate to-business-dark shadow-sm'>
+      <header className='sticky top-0 z-40 w-full border-b bg-gradient-to-tr from-business-dark via-business-slate to-business-dark shadow-sm'>
         <div className='flex h-16 items-center px-4'>
           <Button
             variant='ghost'
