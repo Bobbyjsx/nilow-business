@@ -29,16 +29,16 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    default: 'Nillow | Book Your Services Online',
-    template: '%s | Nillow',
+    default: ' | Book Your Services Online',
+    template: '%s | ',
   },
   description:
-    'Nillow is your all-in-one platform for booking beauty, wellness, and professional services. Schedule appointments effortlessly and discover top-rated service providers near you.',
-  keywords: ['booking', 'appointment', 'beauty', 'wellness', 'services', 'salon', 'spa', 'nillow', 'online booking'],
+    ' is your all-in-one platform for booking beauty, wellness, and professional services. Schedule appointments effortlessly and discover top-rated service providers near you.',
+  keywords: ['booking', 'appointment', 'beauty', 'wellness', 'services', 'salon', 'spa', '', 'online booking'],
   authors: [{ name: 'Godswill Ezeala' }],
   creator: 'Godswill Ezeala',
   publisher: 'Godswill Ezeala',
-  metadataBase: new URL('https://nillow.com'),
+  metadataBase: new URL('https://.com'),
   alternates: {
     canonical: '/',
   },
@@ -54,9 +54,9 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: 'Nillow | Book Your Services Online',
-    description: 'Nillow is your all-in-one platform for booking beauty, wellness, and professional services.',
-    siteName: 'Nillow',
+    title: ' | Book Your Services Online',
+    description: ' is your all-in-one platform for booking beauty, wellness, and professional services.',
+    siteName: '',
     images: [
       {
         url: 'https://res.cloudinary.com/dyq13myey/image/upload/f_auto,q_auto/gztsdhfcgykktqhkqalv',
@@ -65,10 +65,10 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Nillow | Book Your Services Online',
-    description: 'Nillow is your all-in-one platform for booking beauty, wellness, and professional services.',
+    title: ' | Book Your Services Online',
+    description: ' is your all-in-one platform for booking beauty, wellness, and professional services.',
     images: ['/screenshot-wide.png'],
-    creator: '@nillowapp',
+    creator: '@app',
   },
   icons: {
     icon: [
