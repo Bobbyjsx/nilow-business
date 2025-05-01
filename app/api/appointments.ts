@@ -1,18 +1,21 @@
-import { useAppointments as useAppointmentsContext } from '@/components/modules/calendar/appointment-context';
 import { ResponseWithPagination } from '@/lib/constants';
 import http from '@/lib/https';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BusinessService } from './services';
 
 export type AppointmentStatusType = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+export type ImageResponse = {
+  _id: string;
+  image: string;
+};
 export type Appointment = {
   _id: string;
   customer: string;
   business: string;
   isHomeService: boolean;
   services: BusinessService[];
-  beforeImage?: string;
-  afterImage?: string;
+  beforeImage?: ImageResponse;
+  afterImage?: ImageResponse;
   status: AppointmentStatusType;
   start_time: string;
   end_time: Date;
@@ -117,7 +120,6 @@ export const useCreateAppointment = () => {
 
 export const useUpdateAppointment = () => {
   const queryClient = useQueryClient();
-  const { refreshSelectedAppointment } = useAppointmentsContext();
   const { mutateAsync, isPending, error } = useMutation({
     mutationFn: updateAppointment,
     onSuccess: async () => {
@@ -126,11 +128,6 @@ export const useUpdateAppointment = () => {
 
       // Force a refetch to ensure we have the latest data
       await queryClient.refetchQueries({ queryKey: ['get-appointments'] });
-
-      // Then refresh the selected appointment with the updated data
-      setTimeout(() => {
-        refreshSelectedAppointment();
-      }, 300); // Increased delay to ensure the query has completed
     },
   });
 

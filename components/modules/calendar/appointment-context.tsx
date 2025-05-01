@@ -1,7 +1,7 @@
 'use client';
 
 import { Appointment, useAppointments as useAppoint } from '@/app/api/appointments';
-import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, ReactNode, useContext, useMemo, useState } from 'react';
 
 interface AppointmentContextType {
   appointments: Appointment[];
@@ -15,7 +15,6 @@ interface AppointmentContextType {
   openCreateModal: (timeSlot?: { start: Date; end: Date }) => void;
   openEditModal: (appointmentId: string) => void;
   closeFormModal: () => void;
-  refreshSelectedAppointment: () => void;
   setSelectedDate: (date: Date) => void;
   selectedDate: Date;
   isAppointmentsLoading: boolean;
@@ -24,7 +23,7 @@ interface AppointmentContextType {
 const AppointmentContext = createContext<AppointmentContextType | undefined>(undefined);
 
 export function AppointmentProvider({ children }: { children: ReactNode }) {
-  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<{ start: Date; end: Date } | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -44,69 +43,42 @@ export function AppointmentProvider({ children }: { children: ReactNode }) {
       dateTo: lastDay.toISOString(),
     };
   }, [selectedMonth]);
-  console.log(getMonthRange);
+
   const { appointments, isLoading: isAppointmentsLoading } = useAppoint({ range: getMonthRange });
 
-  useEffect(() => {
-    if (selectedAppointment) {
-      refreshSelectedAppointment();
-
-      setTimeout(() => {
-        refreshSelectedAppointment();
-      }, 1000);
-    }
-  }, [appointments]);
-
-  const refreshSelectedAppointment = () => {
-    if (selectedAppointment) {
-      const updatedAppointment = appointments.find((app) => app._id === selectedAppointment._id);
-      console.log('Refreshing appointment:', selectedAppointment._id);
-      console.log('Found updated appointment:', updatedAppointment);
-
-      if (updatedAppointment) {
-        console.log('Setting selected appointment to:', updatedAppointment);
-        setSelectedAppointment({ ...updatedAppointment });
-      }
-    }
-  };
+  const selectedAppointment = useMemo(() => {
+    return appointments.find((app) => app._id === selectedAppointmentId) ?? null;
+  }, [appointments, selectedAppointmentId]);
 
   const openAppointmentDrawer = (appointmentId: string) => {
-    const appointment = appointments.find((app) => app._id === appointmentId);
-    if (appointment) {
-      setSelectedAppointment(appointment);
-      setIsDrawerOpen(true);
-    }
+    setSelectedAppointmentId(appointmentId);
+    setIsDrawerOpen(true);
   };
 
   const closeAppointmentDrawer = () => {
     setIsDrawerOpen(false);
-    // Small delay to prevent visual glitches when closing
-    setTimeout(() => setSelectedAppointment(null), 300);
+    setTimeout(() => setSelectedAppointmentId(null), 300);
   };
 
   const openCreateModal = (timeSlot?: { start: Date; end: Date }) => {
-    setSelectedAppointment(null);
+    setSelectedAppointmentId(null);
     setSelectedTimeSlot(timeSlot || null);
     setFormModalMode('create');
     setIsFormModalOpen(true);
   };
 
   const openEditModal = (appointmentId: string) => {
-    const appointment = appointments.find((app) => app._id === appointmentId);
-    if (appointment) {
-      setSelectedAppointment(appointment);
-      setSelectedTimeSlot(null);
-      setFormModalMode('edit');
-      setIsFormModalOpen(true);
-    }
+    setSelectedAppointmentId(appointmentId);
+    setSelectedTimeSlot(null);
+    setFormModalMode('edit');
+    setIsFormModalOpen(true);
   };
 
   const closeFormModal = () => {
     setIsFormModalOpen(false);
-    // Don't clear selected appointment immediately if drawer is open
     if (!isDrawerOpen) {
       setTimeout(() => {
-        setSelectedAppointment(null);
+        setSelectedAppointmentId(null);
         setSelectedTimeSlot(null);
       }, 300);
     }
@@ -129,7 +101,6 @@ export function AppointmentProvider({ children }: { children: ReactNode }) {
         openCreateModal,
         openEditModal,
         closeFormModal,
-        refreshSelectedAppointment,
       }}
     >
       {children}

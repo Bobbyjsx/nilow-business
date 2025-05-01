@@ -111,7 +111,7 @@ export function Header() {
                   alt='User'
                 />
               </div>
-              <span className='text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#F14F38] to-[#F9A23F]'>Nillow</span>
+              <span className='text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#F14F38] to-[#F9A23F]'>Nilow</span>
             </div>
           </div>
 

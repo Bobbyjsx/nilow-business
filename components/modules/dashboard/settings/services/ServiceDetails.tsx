@@ -171,13 +171,13 @@ export const ServiceDetails = () => {
           <h1 className='text-xl font-semibold'>Edit Service</h1>
         </div>
 
-        <Button
+        {/* <Button
           type='button'
           className='bg-red-200 text-red-500 hover:bg-red-300 hover:text-red-600'
           onClick={() => console.log('delete')}
         >
           <Trash2 />
-        </Button>
+        </Button> */}
       </div>
       <FormProvider {...formMethods}>
         <form

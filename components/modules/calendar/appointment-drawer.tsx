@@ -419,7 +419,7 @@ export function AppointmentDrawer({ open, onOpenChange, appointment }: Appointme
                       Before
                     </div>
                     <AppointmentImageUpload
-                      imageUrl={appointment.beforeImage}
+                      imageUrl={appointment.beforeImage?.image}
                       onUpload={(file) => handleImageUpload(file, 'beforeImage')}
                       disabled={!canEditAppointment() || appointment.status !== APPOINTMENT_STATUS_ENUM.STARTED || isUploading}
                     />
@@ -429,7 +429,7 @@ export function AppointmentDrawer({ open, onOpenChange, appointment }: Appointme
                   <div className='relative'>
                     <div className='absolute -top-2 -left-2 bg-business-primary text-white text-xs px-2 py-1 rounded-md font-medium z-[2]'>After</div>
                     <AppointmentImageUpload
-                      imageUrl={appointment.afterImage}
+                      imageUrl={appointment.afterImage?.image}
                       onUpload={(file) => handleImageUpload(file, 'afterImage')}
                       disabled={!canEditAppointment() || appointment.status !== APPOINTMENT_STATUS_ENUM.STARTED || isUploading}
                     />
